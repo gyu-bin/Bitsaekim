@@ -12,16 +12,21 @@ export default function CreateSongScreen() {
     <View style={{ flex: 1 }}>
       <SongForm
         onSubmit={async (payload) => {
-          const { error } = await supabase.from('songs').insert({
-            title: payload.title,
-            artist: payload.artist ?? null,
-            background_story: payload.background_story ?? null,
-            bible_verse: payload.bible_verse ?? null,
-            lyrics: payload.lyrics,
-            created_by: deviceId ?? null,
+          if (!deviceId?.trim()) {
+            Alert.alert('오류', '기기 정보가 없습니다. 온보딩을 다시 진행해 주세요.');
+            return;
+          }
+          const { error } = await supabase.rpc('insert_song_for_leader', {
+            p_title: payload.title.trim(),
+            p_lyrics: payload.lyrics,
+            p_created_by: deviceId,
           });
           if (error) {
-            Alert.alert('오류', '찬양을 저장하지 못했습니다.');
+            const msg =
+              typeof error.message === 'string' && error.message.length > 0
+                ? error.message
+                : '찬양을 저장하지 못했습니다.';
+            Alert.alert('오류', msg);
             throw error;
           }
           router.back();

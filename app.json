@@ -4,12 +4,11 @@
     "slug": "bitsaekim",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/icon/ios-1024-appstore.png",
     "scheme": "bitsaekim",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
     "splash": {
-      "image": "./assets/images/splash-icon.png",
+      "image": "./assets/icon/splash-iphone-1290x2796.png",
       "resizeMode": "contain",
       "backgroundColor": "#0e0a04"
     },
@@ -20,7 +19,7 @@
     "android": {
       "package": "com.bitsaekim.app",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/images/adaptive-icon.png",
+        "foregroundImage": "./assets/icon/android-512-playstore.png",
         "backgroundColor": "#0e0a04"
       },
       "edgeToEdgeEnabled": true,
@@ -29,11 +28,19 @@
     "web": {
       "bundler": "metro",
       "output": "static",
-      "favicon": "./assets/images/favicon.png"
+      "favicon": "./assets/icon/android-48-mdpi.png"
     },
     "plugins": [
       "expo-router",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "필사 화면을 사진 보관함에 저장하려면 접근이 필요합니다.",
+          "savePhotosPermission": "필사 화면을 사진 보관함에 저장하려면 접근이 필요합니다.",
+          "isAccessMediaLocationEnabled": true
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true

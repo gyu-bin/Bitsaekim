@@ -4,7 +4,7 @@ import { Platform, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { colors } from '@/constants/colors';
-import { fontSize, fonts } from '@/constants/fonts';
+import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeStore } from '@/stores/themeStore';
 
 export default function TabLayout() {
@@ -23,7 +23,7 @@ export default function TabLayout() {
         tabBarActiveTintColor: c.accent,
         tabBarInactiveTintColor: c.textSub,
         tabBarLabelStyle: {
-          fontFamily: fonts.sansMedium,
+          ...typeface.sansMedium,
           fontSize: fontSize.xs,
           marginTop: 2,
         },

@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>빛새김 — 스플래시 애니메이션</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@300;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  background: #111;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  font-family: 'Noto Serif KR', serif;
+}
+
+.phone {
+  width: 390px;
+  height: 844px;
+  background: #120e08;
+  border-radius: 52px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: 0 40px 100px rgba(0,0,0,0.6), inset 0 1px 0 rgba(255,255,255,0.05);
+  border: 1px solid #2a2010;
+}
+
+/* Replay button */
+.replay-btn {
+  position: fixed;
+  bottom: 32px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(184,147,90,0.15);
+  border: 1px solid rgba(184,147,90,0.3);
+  color: #b8935a;
+  padding: 10px 24px;
+  border-radius: 20px;
+  font-size: 13px;
+  cursor: pointer;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 1px;
+  transition: all 0.2s;
+}
+.replay-btn:hover { background: rgba(184,147,90,0.25); }
+
+/* ── SPLASH ── */
+.splash {
+  position: absolute;
+  inset: 0;
+  background: #120e08;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+}
+
+/* Background glow */
+.glow {
+  position: absolute;
+  border-radius: 50%;
+  animation: glowPulse 3s ease-in-out infinite;
+}
+
+.glow1 {
+  width: 400px; height: 400px;
+  top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(circle, rgba(184,147,90,0.08) 0%, transparent 70%);
+  animation-delay: 0s;
+}
+
+.glow2 {
+  width: 200px; height: 200px;
+  top: 15%; left: 10%;
+  background: radial-gradient(circle, rgba(184,147,90,0.04) 0%, transparent 70%);
+  animation-delay: 1s;
+}
+
+.glow3 {
+  width: 160px; height: 160px;
+  bottom: 20%; right: 5%;
+  background: radial-gradient(circle, rgba(184,147,90,0.03) 0%, transparent 70%);
+  animation-delay: 0.5s;
+}
+
+@keyframes glowPulse {
+  0%, 100% { opacity: 0.6; transform: translate(-50%, -50%) scale(1); }
+  50% { opacity: 1; transform: translate(-50%, -50%) scale(1.1); }
+}
+
+.glow2, .glow3 { transform: none; animation: glowPulse2 4s ease-in-out infinite; }
+@keyframes glowPulse2 {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Center content */
+.center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Icon */
+.icon-wrap {
+  opacity: 0;
+  transform: scale(0.7) translateY(20px);
+  animation: iconIn 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.3s forwards;
+  margin-bottom: 28px;
+}
+
+@keyframes iconIn {
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.icon-box {
+  width: 100px; height: 100px;
+  background: #f7edd8;
+  border-radius: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 40px rgba(184,147,90,0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+/* Title — 글자 스윕 */
+.title-wrap {
+  overflow: hidden;
+  margin-bottom: 8px;
+}
+
+.title {
+  font-size: 72px;
+  font-weight: 700;
+  color: #fff;
+  letter-spacing: -3px;
+  line-height: 1;
+  transform: translateY(100%);
+  animation: slideUp 0.7s cubic-bezier(0.22, 1, 0.36, 1) 0.85s forwards;
+}
+
+@keyframes slideUp {
+  to { transform: translateY(0); }
+}
+
+/* 필 먼저, 사 나중에 */
+.char-필 {
+  display: inline-block;
+  transform: translateY(100%);
+  animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 0.85s forwards;
+}
+
+.char-사 {
+  display: inline-block;
+  transform: translateY(100%);
+  animation: slideUp 0.6s cubic-bezier(0.22, 1, 0.36, 1) 1.0s forwards;
+  color: #b8935a;
+}
+
+/* BITSAEKIM label */
+.pilsa {
+  opacity: 0;
+  letter-spacing: 6px;
+  font-family: 'DM Mono', monospace;
+  font-size: 13px;
+  color: #b8935a;
+  animation: fadeIn 0.5s ease 1.4s forwards;
+  margin-bottom: 16px;
+}
+
+@keyframes fadeIn {
+  to { opacity: 0.7; }
+}
+
+/* Divider line — draws itself */
+.line-wrap {
+  width: 60px;
+  height: 1px;
+  overflow: hidden;
+  margin-bottom: 16px;
+}
+
+.line {
+  width: 100%;
+  height: 100%;
+  background: #b8935a;
+  opacity: 0.4;
+  transform: scaleX(0);
+  transform-origin: left;
+  animation: drawLine 0.6s ease 1.6s forwards;
+}
+
+@keyframes drawLine {
+  to { transform: scaleX(1); }
+}
+
+/* Tagline — 단어별로 나타나기 */
+.tagline {
+  font-size: 12px;
+  color: #b8935a;
+  opacity: 0;
+  letter-spacing: 0.5px;
+  animation: fadeIn 0.6s ease 1.9s forwards;
+  font-family: 'Noto Serif KR', serif;
+  font-weight: 300;
+}
+
+/* Dots loader */
+.dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 48px;
+}
+
+.dot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: #b8935a;
+  opacity: 0;
+}
+
+.dot:nth-child(1) { animation: dotAnim 1.2s ease 2.4s infinite; }
+.dot:nth-child(2) { animation: dotAnim 1.2s ease 2.55s infinite; }
+.dot:nth-child(3) { animation: dotAnim 1.2s ease 2.7s infinite; }
+
+@keyframes dotAnim {
+  0%, 100% { opacity: 0; transform: scale(0.6); }
+  50% { opacity: 0.6; transform: scale(1); }
+}
+
+/* ── HOME (after splash) ── */
+.home {
+  position: absolute;
+  inset: 0;
+  background: #faf8f4;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.8s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.home.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.home-text {
+  font-size: 16px;
+  color: #8a7a64;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 1px;
+}
+
+.home-sub {
+  font-size: 13px;
+  color: #c8bca8;
+  font-family: 'DM Mono', monospace;
+  letter-spacing: 1px;
+}
+
+/* Splash fade out */
+.splash.fadeout {
+  animation: splashOut 0.8s ease forwards;
+}
+
+@keyframes splashOut {
+  0% { opacity: 1; transform: scale(1); }
+  100% { opacity: 0; transform: scale(1.05); }
+}
+
+/* SVG icon in box */
+.icon-svg {
+  width: 76px; height: 76px;
+}
+</style>
+</head>
+<body>
+
+<div class="phone" id="phone">
+
+  <!-- HOME (behind splash) -->
+  <div class="home" id="home">
+    <div style="font-size: 28px; margin-bottom: 8px;">🏠</div>
+    <div class="home-text">HOME SCREEN</div>
+    <div class="home-sub">앱이 시작됐습니다</div>
+  </div>
+
+  <!-- SPLASH -->
+  <div class="splash" id="splash">
+
+    <!-- BG Glows -->
+    <div class="glow glow1"></div>
+    <div class="glow glow2"></div>
+    <div class="glow glow3"></div>
+
+    <!-- Center Content -->
+    <div class="center">
+
+      <!-- Icon -->
+      <div class="icon-wrap">
+        <div class="icon-box">
+          <svg class="icon-svg" viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+            <line x1="18" y1="72" x2="102" y2="72" stroke="#d4c4a8" stroke-width="0.8" opacity="0.6"/>
+            <line x1="18" y1="84" x2="102" y2="84" stroke="#d4c4a8" stroke-width="0.8" opacity="0.6"/>
+            <path d="M74 14 Q86 24 83 38 L52 90 L45 97 L48 88 L79 36 Q77 22 74 14Z" fill="#2a1e0e"/>
+            <path d="M74 14 Q84 22 81 35 L73 50 Q75 36 72 26Z" fill="white" opacity="0.12"/>
+            <path d="M79 36 L83 38 L52 90 L48 88Z" fill="#0e0c08" opacity="0.4"/>
+            <path d="M48 88 L45 97 L54 92Z" fill="#b8935a"/>
+            <path d="M47 93 Q36 100 22 105" stroke="#b8935a" stroke-width="2.8" stroke-linecap="round" fill="none" opacity="0.9"/>
+            <path d="M79 36 Q94 28 87 18 Q80 28 72 36" fill="#b8935a" opacity="0.65"/>
+            <path d="M75 44 Q92 38 87 26 Q79 36 70 44" fill="#b8935a" opacity="0.38"/>
+            <path d="M72 52 Q88 48 85 36 Q77 44 68 52" fill="#b8935a" opacity="0.18"/>
+            <circle cx="93" cy="22" r="3.5" fill="#b8935a" opacity="0.4"/>
+            <circle cx="93" cy="22" r="2" fill="#b8935a" opacity="0.7"/>
+          </svg>
+        </div>
+      </div>
+
+      <!-- Title -->
+      <div class="title-wrap">
+        <div class="title">
+          <span class="char-필">필</span><span class="char-사">사</span>
+        </div>
+      </div>
+
+      <!-- BITSAEKIM -->
+      <div class="pilsa">BITSAEKIM</div>
+
+      <!-- Line -->
+      <div class="line-wrap">
+        <div class="line"></div>
+      </div>
+
+      <!-- Tagline -->
+      <div class="tagline">빛 가운데 새기는 찬양</div>
+
+      <!-- Dots -->
+      <div class="dots">
+        <div class="dot"></div>
+        <div class="dot"></div>
+        <div class="dot"></div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<button class="replay-btn" onclick="replay()">↺ 다시 재생</button>
+
+<script>
+let timer;
+
+function startSequence() {
+  // After 3.8s, fade out splash and show home
+  timer = setTimeout(() => {
+    const splash = document.getElementById('splash');
+    const home = document.getElementById('home');
+    splash.classList.add('fadeout');
+    setTimeout(() => {
+      splash.style.display = 'none';
+      home.classList.add('visible');
+    }, 800);
+  }, 3800);
+}
+
+function replay() {
+  clearTimeout(timer);
+
+  const phone = document.getElementById('phone');
+  const splash = document.getElementById('splash');
+  const home = document.getElementById('home');
+
+  // Reset
+  home.classList.remove('visible');
+  splash.classList.remove('fadeout');
+  splash.style.display = 'flex';
+
+  // Re-trigger animations by cloning
+  const newSplash = splash.cloneNode(true);
+  phone.replaceChild(newSplash, splash);
+
+  startSequence();
+}
+
+startSequence();
+</script>
+
+</body>
+</html>

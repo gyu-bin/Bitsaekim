@@ -6,7 +6,7 @@ import DraggableFlatList, {
   ScaleDecorator,
 } from 'react-native-draggable-flatlist';
 
-import { fontSize, fonts } from '@/constants/fonts';
+import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { SetlistItem } from '@/types';
 
@@ -86,9 +86,9 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   body: { flex: 1, gap: 6 },
-  title: { fontFamily: fonts.sansMedium, fontSize: fontSize.md },
+  title: { ...typeface.sansMedium, fontSize: fontSize.md },
   note: {
-    fontFamily: fonts.sans,
+    ...typeface.sans,
     fontSize: fontSize.sm,
     borderWidth: 1,
     borderRadius: 8,

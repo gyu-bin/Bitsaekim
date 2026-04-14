@@ -1,7 +1,7 @@
 import { Link } from 'expo-router';
 import { StyleSheet, Text, View } from 'react-native';
 
-import { fontSize, fonts } from '@/constants/fonts';
+import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
 /**
@@ -38,13 +38,13 @@ const styles = StyleSheet.create({
   },
   title: {
     fontSize: fontSize.lg,
-    fontFamily: fonts.sansMedium,
+    ...typeface.sansMedium,
     textAlign: 'center',
   },
   sub: {
     marginTop: 12,
     fontSize: fontSize.sm,
-    fontFamily: fonts.sans,
+    ...typeface.sans,
     textAlign: 'center',
     lineHeight: 20,
     maxWidth: 320,
@@ -55,6 +55,6 @@ const styles = StyleSheet.create({
   },
   linkText: {
     fontSize: fontSize.base,
-    fontFamily: fonts.sansMedium,
+    ...typeface.sansMedium,
   },
 });

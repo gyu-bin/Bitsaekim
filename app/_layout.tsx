@@ -10,7 +10,7 @@ import {
 import { ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter, useSegments } from 'expo-router';
+import { Stack, useRouter, useSegments, type Href } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { InteractionManager } from 'react-native';
@@ -18,6 +18,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { colors } from '@/constants/colors';
+import { useHydrateGatheringOwner } from '@/hooks/useHydrateGatheringOwner';
 import { queryClient } from '@/lib/queryClient';
 import { seedSongsIfEmpty } from '@/lib/seedSongsIfEmpty';
 import { useUserStore } from '@/stores/userStore';
@@ -41,6 +42,7 @@ function useUserStoreHydrated() {
 
 function useRootNavigationLogic(enabled: boolean) {
   const isOnboarded = useUserStore((s) => s.isOnboarded);
+  const gatheringId = useUserStore((s) => s.gatheringId);
   const segments = useSegments();
   const router = useRouter();
 
@@ -48,12 +50,25 @@ function useRootNavigationLogic(enabled: boolean) {
     if (!enabled) return;
     const root = segments[0];
     const inOnboarding = root === 'onboarding';
-    if (!isOnboarded && !inOnboarding) {
+    const inJoinGathering = String(segments[0] ?? '') === 'join-gathering';
+    const inJoinDeepLink = String(segments[0] ?? '') === 'join';
+    /** 모임 없을 때 새 모임 만들기 등 `leader/*` 로 들어온 경우 join 화면으로 덮어쓰지 않음 */
+    const inLeader = root === 'leader';
+
+    if (!isOnboarded && !inOnboarding && !inJoinDeepLink) {
       router.replace('/onboarding');
-    } else if (isOnboarded && inOnboarding) {
+    } else if (
+      isOnboarded &&
+      !gatheringId &&
+      !inJoinGathering &&
+      !inJoinDeepLink &&
+      !inLeader
+    ) {
+      router.replace('/join-gathering' as Href);
+    } else if (isOnboarded && gatheringId && (inOnboarding || inJoinGathering || inJoinDeepLink)) {
       router.replace('/(tabs)/transcribe');
     }
-  }, [enabled, isOnboarded, router, segments]);
+  }, [enabled, gatheringId, isOnboarded, router, segments]);
 }
 
 function NavigationThemeBridge({ children }: { children: React.ReactNode }) {
@@ -70,10 +85,10 @@ function NavigationThemeBridge({ children }: { children: React.ReactNode }) {
       notification: c.accent,
     },
     fonts: {
-      regular: { fontFamily: 'NotoSansKR_400Regular', fontWeight: '400' as const },
-      medium: { fontFamily: 'NotoSansKR_500Medium', fontWeight: '500' as const },
-      bold: { fontFamily: 'NotoSerifKR_700Bold', fontWeight: '700' as const },
-      heavy: { fontFamily: 'NotoSerifKR_700Bold', fontWeight: '700' as const },
+      regular: { fontFamily: 'NotoSansKR_400Regular', fontWeight: 'normal' as const },
+      medium: { fontFamily: 'NotoSansKR_500Medium', fontWeight: 'normal' as const },
+      bold: { fontFamily: 'NotoSerifKR_700Bold', fontWeight: 'normal' as const },
+      heavy: { fontFamily: 'NotoSerifKR_700Bold', fontWeight: 'normal' as const },
     },
   };
   return <ThemeProvider value={theme}>{children}</ThemeProvider>;
@@ -120,9 +135,12 @@ export default function RootLayout() {
 
 function RootStack() {
   useRootNavigationLogic(true);
+  useHydrateGatheringOwner();
   return (
     <Stack screenOptions={{ headerShown: false }}>
       <Stack.Screen name="onboarding" />
+      <Stack.Screen name="join-gathering" />
+      <Stack.Screen name="join/[inviteCode]" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="leader" />
       <Stack.Screen name="+not-found" />

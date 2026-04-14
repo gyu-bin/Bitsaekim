@@ -35,6 +35,7 @@ export default function LeaderLayout() {
         headerLeft: () => <StackBackButton fallbackHref="/(tabs)/mypage" />,
       }}
     >
+      <Stack.Screen name="gathering/create" options={{ title: '모임 만들기' }} />
       <Stack.Screen name="worship/create" options={{ title: '예배 생성' }} />
       <Stack.Screen name="worship/[id]/edit" options={{ title: '예배 수정' }} />
       <Stack.Screen name="worship/[id]/conti" options={{ title: '콘티 편성' }} />

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LayoutChangeEvent, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { fontSize, fonts } from '@/constants/fonts';
+import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { LyricVerse } from '@/types';
 
@@ -55,9 +55,9 @@ export function LyricsPanel({ verse, backgroundStory, bibleVerse, compact }: Pro
 
 const styles = StyleSheet.create({
   wrap: { gap: 6 },
-  label: { fontFamily: fonts.mono, fontSize: fontSize.xs, letterSpacing: 1 },
-  line: { fontFamily: fonts.serif, fontSize: fontSize.md, lineHeight: fontSize.md * 1.9 },
-  bible: { fontFamily: fonts.serif, fontSize: fontSize.sm, marginTop: 8, fontStyle: 'italic' },
-  toggle: { fontFamily: fonts.sansMedium, fontSize: fontSize.sm, marginTop: 10 },
-  story: { fontFamily: fonts.sans, fontSize: fontSize.sm, lineHeight: 20, marginTop: 6 },
+  label: { ...typeface.mono, fontSize: fontSize.xs, letterSpacing: 1 },
+  line: { ...typeface.serif, fontSize: fontSize.md, lineHeight: fontSize.md * 1.9 },
+  bible: { ...typeface.serif, fontSize: fontSize.sm, marginTop: 8, fontStyle: 'italic' },
+  toggle: { ...typeface.sansMedium, fontSize: fontSize.sm, marginTop: 10 },
+  story: { ...typeface.sans, fontSize: fontSize.sm, lineHeight: 20, marginTop: 6 },
 });

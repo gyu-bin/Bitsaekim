@@ -4,7 +4,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useCallback, useState } from 'react';
 import { Alert, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
-import { fontSize, fonts } from '@/constants/fonts';
+import { fontSize, typeface } from '@/constants/fonts';
 import { supabase } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
 
@@ -71,5 +71,5 @@ export function LikeButton({ postId, initialCount, initialLiked }: Props) {
 
 const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-  num: { fontFamily: fonts.mono, fontSize: fontSize.xs },
+  num: { ...typeface.mono, fontSize: fontSize.xs },
 });

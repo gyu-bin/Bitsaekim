@@ -1,6 +1,6 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
-import { fontSize, fonts } from '@/constants/fonts';
+import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { WorshipService } from '@/types';
 
@@ -76,5 +76,5 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginRight: 4,
   },
-  chipText: { fontFamily: fonts.sansMedium, fontSize: fontSize.sm },
+  chipText: { ...typeface.sansMedium, fontSize: fontSize.sm },
 });

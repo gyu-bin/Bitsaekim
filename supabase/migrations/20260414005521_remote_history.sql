@@ -1,0 +1,1 @@
+-- Remote migration history baseline (already applied on Supabase). Kept so local `supabase db push` matches project.

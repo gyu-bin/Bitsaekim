@@ -9,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { fontSize, fonts } from '@/constants/fonts';
+import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
 type Props = PressableProps & {
@@ -89,7 +89,7 @@ const styles = StyleSheet.create({
     minHeight: 48,
   },
   text: {
-    fontFamily: fonts.sansMedium,
+    ...typeface.sansMedium,
     fontSize: fontSize.md,
   },
 });

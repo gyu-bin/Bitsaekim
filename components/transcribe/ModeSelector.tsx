@@ -10,7 +10,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { fontSize, fonts } from '@/constants/fonts';
+import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { TranscribeMode } from '@/types';
 
@@ -104,8 +104,8 @@ const styles = StyleSheet.create({
     padding: 20,
     gap: 12,
   },
-  title: { fontFamily: fonts.serifBold, fontSize: fontSize.lg },
-  hint: { fontFamily: fonts.sans, fontSize: fontSize.sm, marginBottom: 4 },
+  title: { ...typeface.serifBold, fontSize: fontSize.lg },
+  hint: { ...typeface.sans, fontSize: fontSize.sm, marginBottom: 4 },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -115,6 +115,6 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   emoji: { fontSize: 28 },
-  optTitle: { fontFamily: fonts.sansMedium, fontSize: fontSize.md },
-  optSub: { fontFamily: fonts.sans, fontSize: fontSize.sm, marginTop: 4 },
+  optTitle: { ...typeface.sansMedium, fontSize: fontSize.md },
+  optSub: { ...typeface.sans, fontSize: fontSize.sm, marginTop: 4 },
 });

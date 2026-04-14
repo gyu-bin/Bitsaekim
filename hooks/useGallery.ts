@@ -22,7 +22,15 @@ async function fetchGalleryPage(
     .from('gallery_posts')
     .select(
       `
-      *,
+      id,
+      device_id,
+      worship_id,
+      song_id,
+      image_url,
+      body,
+      link_url,
+      lyrics_share,
+      created_at,
       user:users(name),
       song:songs(title, artist),
       worship:worship_services(name)
@@ -36,7 +44,19 @@ async function fetchGalleryPage(
 
   const { data, error } = await q;
   if (error) throw error;
-  const rows = (data ?? []) as GalleryRow[];
+  const rawRows = (data ?? []) as Record<string, unknown>[];
+
+  const rows: GalleryRow[] = rawRows.map((raw) => {
+    const user = raw.user;
+    const song = raw.song;
+    const worship = raw.worship;
+    return {
+      ...(raw as unknown as GalleryPost),
+      user: (Array.isArray(user) ? user[0] : user) as GalleryRow['user'],
+      song: (Array.isArray(song) ? song[0] : song) as GalleryRow['song'],
+      worship: (Array.isArray(worship) ? worship[0] : worship) as GalleryRow['worship'],
+    };
+  });
 
   if (!rows.length) return [];
 

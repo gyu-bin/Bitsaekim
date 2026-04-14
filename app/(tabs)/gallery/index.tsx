@@ -1,13 +1,23 @@
+import { Feather } from '@expo/vector-icons';
 import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useMemo, useState } from 'react';
-import { ActivityIndicator, FlatList, StyleSheet, Text, View } from 'react-native';
+import { router, useLocalSearchParams } from 'expo-router';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ActivityIndicator,
+  Alert,
+  FlatList,
+  RefreshControl,
+  StyleSheet,
+  Text,
+  TouchableOpacity,
+  View,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import type { GalleryFilter } from '@/components/gallery/FilterChips';
 import { FilterChips } from '@/components/gallery/FilterChips';
 import { PostCard } from '@/components/gallery/PostCard';
-import { fontSize, fonts } from '@/constants/fonts';
+import { fontSize, typeface } from '@/constants/fonts';
 import { useGallery } from '@/hooks/useGallery';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useWorships } from '@/hooks/useWorships';
@@ -16,7 +26,7 @@ export default function GalleryScreen() {
   const insets = useSafeAreaInsets();
   const tabBarHeight = useBottomTabBarHeight();
   const c = useThemeColors();
-  const { data: worships } = useWorships();
+  const { data: worships, refetch: refetchWorships, isRefetching: worshipRefetching } = useWorships();
   const { filter: filterParam } = useLocalSearchParams<{ filter?: string }>();
   const [filter, setFilter] = useState<GalleryFilter>('all');
 
@@ -30,14 +40,28 @@ export default function GalleryScreen() {
   const q = useGallery(worshipId, mine);
   const posts = useMemo(() => q.data?.pages.flat() ?? [], [q.data?.pages]);
 
+  const [manualRefresh, setManualRefresh] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setManualRefresh(true);
+    try {
+      await Promise.all([q.refetch(), refetchWorships()]);
+    } finally {
+      setManualRefresh(false);
+    }
+  }, [q, refetchWorships]);
+
   const listPadBottom = tabBarHeight + Math.max(insets.bottom, 12) + 8;
+  const galleryRefreshing = manualRefresh || q.isRefetching || worshipRefetching;
 
   const listHeader = useMemo(
     () => (
       <View style={styles.listHeader}>
         <View style={styles.headerBlock}>
           <Text style={[styles.title, { color: c.text }]}>나눔</Text>
-          <Text style={[styles.subtitle, { color: c.textSub }]}>모두의 필사를 모아 보고 응원해 보세요</Text>
+          <Text style={[styles.subtitle, { color: c.textSub }]}>
+            필사·사진뿐 아니라 찬양 링크·가사·묵상도 나눌 수 있어요
+          </Text>
+          <Text style={[styles.pullHint, { color: c.textSub }]}>아래로 당겨 새 글과 예배 목록을 새로고침</Text>
         </View>
         <FilterChips worships={worships ?? []} active={filter} onChange={setFilter} />
       </View>
@@ -54,6 +78,14 @@ export default function GalleryScreen() {
         columnWrapperStyle={styles.row}
         ListHeaderComponent={listHeader}
         contentContainerStyle={[styles.listContent, { paddingBottom: listPadBottom }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={galleryRefreshing}
+            onRefresh={() => void onRefresh()}
+            tintColor={c.accent}
+            colors={[c.accent]}
+          />
+        }
         onEndReached={() => q.fetchNextPage()}
         onEndReachedThreshold={0.4}
         ListEmptyComponent={
@@ -74,6 +106,28 @@ export default function GalleryScreen() {
           </View>
         )}
       />
+      <View style={[styles.fabWrap, { bottom: listPadBottom + 4 }]} pointerEvents="box-none">
+        <TouchableOpacity
+          style={[styles.fab, { backgroundColor: c.accent }]}
+          onPress={() =>
+            Alert.alert('나눔 올리기', '어떤 형태로 올릴까요?', [
+              {
+                text: '사진·필사 캡처',
+                onPress: () => router.push('/(tabs)/gallery/compose'),
+              },
+              {
+                text: '찬양·링크·가사·묵상',
+                onPress: () => router.push('/(tabs)/gallery/share-chant'),
+              },
+              { text: '취소', style: 'cancel' },
+            ])
+          }
+          accessibilityRole="button"
+          accessibilityLabel="나눔 글 올리기"
+        >
+          <Feather name="plus" size={26} color="#fff" />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }
@@ -87,19 +141,37 @@ const styles = StyleSheet.create({
     paddingBottom: 0,
   },
   title: {
-    fontFamily: fonts.serifBold,
+    ...typeface.serifBold,
     fontSize: fontSize['2xl'],
   },
   subtitle: {
-    fontFamily: fonts.sans,
+    ...typeface.sans,
     fontSize: fontSize.sm,
     marginTop: 2,
     lineHeight: 18,
   },
+  pullHint: { ...typeface.sans, fontSize: fontSize.xs, marginTop: 8, lineHeight: 16 },
   row: { justifyContent: 'space-between', paddingHorizontal: 12 },
-  /** flexGrow 제거: 빈 목록일 때 칩~빈 문구 사이가 과도하게 벌어지지 않음 */
   listContent: {},
   cell: { flex: 1, maxWidth: '50%' },
   loader: { marginTop: 16, marginBottom: 8 },
-  empty: { textAlign: 'center', marginTop: 12, fontFamily: fonts.sans, fontSize: fontSize.sm },
+  empty: { textAlign: 'center', marginTop: 12, ...typeface.sans, fontSize: fontSize.sm },
+  fabWrap: {
+    position: 'absolute',
+    right: 16,
+    left: undefined,
+    alignItems: 'flex-end',
+  },
+  fab: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
 });

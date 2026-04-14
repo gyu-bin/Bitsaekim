@@ -1,6 +1,6 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
-import { fontSize, fonts } from '@/constants/fonts';
+import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { SetlistItem } from '@/types';
 
@@ -71,12 +71,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badgeText: { fontFamily: fonts.mono, fontSize: fontSize.xs },
+  badgeText: { ...typeface.mono, fontSize: fontSize.xs },
   body: { flex: 1 },
-  title: { fontFamily: fonts.serif, fontSize: fontSize.md },
-  artist: { fontFamily: fonts.sans, fontSize: fontSize.sm, marginTop: 2 },
-  note: { fontFamily: fonts.sans, fontSize: fontSize.sm, marginTop: 6, fontStyle: 'italic' },
+  title: { ...typeface.serif, fontSize: fontSize.md },
+  artist: { ...typeface.sans, fontSize: fontSize.sm, marginTop: 2 },
+  note: { ...typeface.sans, fontSize: fontSize.sm, marginTop: 6, fontStyle: 'italic' },
   specialRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingVertical: 8 },
   specialIcon: { fontSize: fontSize.md },
-  specialText: { fontFamily: fonts.serif, fontSize: fontSize.md, fontStyle: 'italic' },
+  specialText: { ...typeface.serif, fontSize: fontSize.md, fontStyle: 'italic' },
 });

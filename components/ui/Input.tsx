@@ -1,6 +1,6 @@
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
-import { fontSize } from '@/constants/fonts';
+import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
 export function Input(props: TextInputProps) {
@@ -23,6 +23,7 @@ export function Input(props: TextInputProps) {
 
 const styles = StyleSheet.create({
   input: {
+    ...typeface.sans,
     fontSize: fontSize.md,
     borderWidth: 1,
     borderRadius: 12,
