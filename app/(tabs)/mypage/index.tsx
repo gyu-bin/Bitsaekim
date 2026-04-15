@@ -1,8 +1,9 @@
 import { Feather } from '@expo/vector-icons';
-import * as Haptics from 'expo-haptics';
 import { useQueryClient } from '@tanstack/react-query';
+import * as Clipboard from 'expo-clipboard';
+import * as Haptics from 'expo-haptics';
 import { router, type Href } from 'expo-router';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
@@ -113,6 +114,16 @@ export default function MypageScreen() {
     ]);
   };
 
+  const copyGatheringInviteCode = useCallback(async () => {
+    if (!gatheringInviteCode) return;
+    try {
+      await Clipboard.setStringAsync(gatheringInviteCode);
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    } catch {
+      Alert.alert('오류', '복사하지 못했습니다. 다시 시도해 주세요.');
+    }
+  }, [gatheringInviteCode]);
+
   const leaveLeader = () => {
     Alert.alert('인도자 해제', '일반 참여자 모드로 돌아갈까요?', [
       { text: '취소', style: 'cancel' },
@@ -147,19 +158,31 @@ export default function MypageScreen() {
         >
           <Feather name={isDark ? 'sun' : 'moon'} size={22} color="#f0ece4" />
         </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.nameEditRow}
-          onPress={() => {
-            setNameDraft(name ?? '');
-            setNameEditOpen(true);
-          }}
-          activeOpacity={0.7}
-          accessibilityRole="button"
-          accessibilityLabel="이름 편집"
-        >
-          <Text style={styles.name}>{name ?? '이름 없음'}</Text>
-          <Feather name="edit-2" size={16} color="rgba(240,236,228,0.55)" style={{ marginLeft: 8 }} />
-        </TouchableOpacity>
+        <View style={styles.heroProfile}>
+          <TouchableOpacity
+            style={styles.nameEditRow}
+            onPress={() => {
+              setNameDraft(name ?? '');
+              setNameEditOpen(true);
+            }}
+            activeOpacity={0.7}
+            accessibilityRole="button"
+            accessibilityLabel="이름 편집"
+          >
+            <Text style={styles.name}>{name ?? '이름 없음'}</Text>
+            <Feather name="edit-2" size={16} color="rgba(240,236,228,0.55)" style={{ marginLeft: 8 }} />
+          </TouchableOpacity>
+          {role === 'leader' ? (
+            <View
+              style={styles.leaderBadge}
+              accessibilityRole="text"
+              accessibilityLabel="인도자 권한으로 사용 중"
+            >
+              <Feather name="award" size={13} color={palette.gold} />
+              <Text style={styles.leaderBadgeText}>인도자</Text>
+            </View>
+          ) : null}
+        </View>
       </View>
 
       <Modal
@@ -216,11 +239,20 @@ export default function MypageScreen() {
           </Text>
           {gatheringInviteCode ? (
             <>
-              <Text style={[styles.inviteCode, { color: c.accent }]} selectable>
-                초대 코드 {gatheringInviteCode}
-              </Text>
+              <TouchableOpacity
+                style={[styles.inviteCodeRow, { borderColor: c.accent }]}
+                onPress={() => void copyGatheringInviteCode()}
+                activeOpacity={0.75}
+                accessibilityRole="button"
+                accessibilityLabel="초대 코드 복사"
+              >
+                <Text style={[styles.inviteCode, { color: c.accent }]} numberOfLines={1}>
+                  초대 코드 {gatheringInviteCode}
+                </Text>
+                <Feather name="copy" size={18} color={c.accent} />
+              </TouchableOpacity>
               <Text style={[styles.gatheringHint, { color: c.textSub }]}>
-                새 기기에서도 코드나 링크로 같은 모임에 들어올 수 있어요.
+                코드 줄을 누르면 복사돼요. 새 기기에서도 코드나 링크로 같은 모임에 들어올 수 있어요.
               </Text>
               <TouchableOpacity
                 style={[styles.shareInviteBtn, { borderColor: c.accent }]}
@@ -298,42 +330,89 @@ export default function MypageScreen() {
         </TouchableOpacity>
       ) : (
         <View style={styles.leaderMenu}>
-          <Text style={[styles.menuTitle, { color: c.text }]}>인도자 메뉴</Text>
-          {isNonOwnerLeader ? (
-            <Text style={[styles.myWorshipHint, { color: c.textSub, marginBottom: 8 }]}>
-              이 모임의 예배 목록·정보 수정은 모임장만 할 수 있어요.
+          <View style={[styles.leaderMenuPanel, { borderColor: c.border, backgroundColor: c.card }]}>
+            <Text style={[styles.leaderPanelTitle, { color: c.text }]}>인도자 도구</Text>
+            <Text style={[styles.leaderPanelSub, { color: c.textSub }]}>
+              예배·찬양을 만들고, 내가 올린 예배의 정보와 콘티를 다룹니다.
             </Text>
-          ) : null}
-          <TouchableOpacity
-            style={[
-              styles.menuItem,
-              {
-                backgroundColor: c.card,
-                borderColor: c.border,
-                opacity: isNonOwnerLeader ? 0.45 : 1,
-              },
-            ]}
-            onPress={() => {
-              if (isNonOwnerLeader) {
-                Alert.alert('알림', '예배를 만드는 것은 이 모임의 모임장만 할 수 있어요.');
-                return;
-              }
-              router.push('/leader/worship/create');
-            }}
-            disabled={isNonOwnerLeader}
-          >
-            <Text style={{ color: c.text, ...typeface.sansMedium }}>예배 생성</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.menuItem, { backgroundColor: c.card, borderColor: c.border }]}
-            onPress={() => router.push('/leader/song/create')}
-          >
-            <Text style={{ color: c.text, ...typeface.sansMedium }}>찬양 추가</Text>
-          </TouchableOpacity>
 
-          <Text style={[styles.menuTitle, { color: c.text, marginTop: 20 }]}>내가 올린 예배</Text>
+            {isNonOwnerLeader ? (
+              <View style={[styles.leaderNotice, { backgroundColor: c.accentLight, borderColor: c.border }]}>
+                <Feather name="info" size={16} color={c.accent} style={{ marginRight: 8 }} />
+                <Text style={[styles.leaderNoticeText, { color: c.textMid }]}>
+                  이 모임에서는 예배 등록·예배 정보 수정이 모임장만 가능해요. 찬양 추가와 내가 만든 예배의 콘티는
+                  그대로 다룰 수 있어요.
+                </Text>
+              </View>
+            ) : null}
+
+            <Text style={[styles.leaderSectionLabel, { color: c.accent }]}>예배</Text>
+            <Text style={[styles.leaderSectionTitle, { color: c.text }]}>새 예배 등록</Text>
+            <Text style={[styles.leaderSectionHint, { color: c.textSub }]}>
+              날짜·이름을 정해 모임 예배 목록에 올립니다.
+            </Text>
+            <TouchableOpacity
+              style={[
+                styles.leaderActionCard,
+                {
+                  backgroundColor: c.background,
+                  borderColor: c.border,
+                  opacity: isNonOwnerLeader ? 0.5 : 1,
+                },
+              ]}
+              onPress={() => {
+                if (isNonOwnerLeader) {
+                  Alert.alert('알림', '예배를 만드는 것은 이 모임의 모임장만 할 수 있어요.');
+                  return;
+                }
+                router.push('/leader/worship/create');
+              }}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="새 예배 등록"
+            >
+              <View style={[styles.leaderActionIcon, { backgroundColor: c.accentLight }]}>
+                <Feather name="calendar" size={22} color={c.accent} />
+              </View>
+              <View style={styles.leaderActionTextCol}>
+                <Text style={[styles.leaderActionPrimary, { color: c.text }]}>콘티 만들기</Text>
+                <Text style={[styles.leaderActionSecondary, { color: c.textSub }]} numberOfLines={2}>
+                  모임원 필사·나눔 화면에 바로 보입니다.
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={22} color={c.textSub} />
+            </TouchableOpacity>
+
+            <View style={[styles.leaderDivider, { backgroundColor: c.border }]} />
+
+            <Text style={[styles.leaderSectionLabel, { color: c.accent }]}>찬양</Text>
+            <Text style={[styles.leaderSectionTitle, { color: c.text }]}>찬양 추가하기</Text>
+            <Text style={[styles.leaderSectionHint, { color: c.textSub }]}>
+              제목·가사를 넣으면 콘티 편집·검색에서 고를 수 있어요.
+            </Text>
+            <TouchableOpacity
+              style={[styles.leaderActionCard, { backgroundColor: c.background, borderColor: c.border }]}
+              onPress={() => router.push('/leader/song/create')}
+              activeOpacity={0.75}
+              accessibilityRole="button"
+              accessibilityLabel="찬양 곡 추가"
+            >
+              <View style={[styles.leaderActionIcon, { backgroundColor: c.accentLight }]}>
+                <Feather name="music" size={22} color={c.accent} />
+              </View>
+              <View style={styles.leaderActionTextCol}>
+                <Text style={[styles.leaderActionPrimary, { color: c.text }]}>찬양 추가</Text>
+                <Text style={[styles.leaderActionSecondary, { color: c.textSub }]} numberOfLines={2}>
+                  새 찬양을 등록합니다.
+                </Text>
+              </View>
+              <Feather name="chevron-right" size={22} color={c.textSub} />
+            </TouchableOpacity>
+          </View>
+
+          <Text style={[styles.leaderBlockHeading, { color: c.text }]}>내가 올린 예배</Text>
           <Text style={[styles.myWorshipHint, { color: c.textSub }]}>
-            예배 이름·날짜는 「정보 수정」, 곡 편성은 「콘티 편집」에서 예배 생성과 같이 바꿀 수 있어요.
+            이름·날짜는 「정보 수정」, 곡 순서·특송은 「콘티 편집」에서 바꿀 수 있어요.
           </Text>
           {myWorshipsLoading ? (
             <Text style={[styles.myWorshipHint, { color: c.textSub }]}>불러오는 중…</Text>
@@ -352,21 +431,26 @@ export default function MypageScreen() {
                   key={w.id}
                   style={[styles.myWorshipCard, { backgroundColor: c.card, borderColor: c.border }]}
                 >
+                  <Text style={[styles.myWorshipDate, { color: c.textSub }]}>{dateLabel}</Text>
                   <Text style={[styles.myWorshipName, { color: c.text }]} numberOfLines={2}>
                     {w.name}
                   </Text>
-                  <Text style={[styles.myWorshipDate, { color: c.textSub }]}>{dateLabel}</Text>
+                  <Text style={[styles.myWorshipActionHint, { color: c.textSub }]}>
+                    예배 안내 문구·날짜 / 콘티 곡·순서
+                  </Text>
                   <View style={styles.myWorshipActions}>
                     <TouchableOpacity
-                      style={[styles.myWorshipBtn, { borderColor: c.accent }]}
+                      style={[styles.myWorshipBtn, { borderColor: c.accent, backgroundColor: c.background }]}
                       onPress={() => router.push(`/leader/worship/${w.id}/edit`)}
                     >
+                      <Text style={[styles.myWorshipBtnLabel, { color: c.textSub }]}>이름·날짜</Text>
                       <Text style={[styles.myWorshipBtnText, { color: c.accent }]}>정보 수정</Text>
                     </TouchableOpacity>
                     <TouchableOpacity
-                      style={[styles.myWorshipBtn, { borderColor: c.accent }]}
+                      style={[styles.myWorshipBtn, { borderColor: c.accent, backgroundColor: c.background }]}
                       onPress={() => router.push(`/leader/worship/${w.id}/conti`)}
                     >
+                      <Text style={[styles.myWorshipBtnLabel, { color: c.textSub }]}>곡·순서</Text>
                       <Text style={[styles.myWorshipBtnText, { color: c.accent }]}>콘티 편집</Text>
                     </TouchableOpacity>
                   </View>
@@ -395,6 +479,24 @@ const styles = StyleSheet.create({
     position: 'relative',
   },
   themeBtn: { position: 'absolute', top: 16, right: 20, padding: 8 },
+  heroProfile: { alignItems: 'center', marginTop: 8 },
+  leaderBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(212, 169, 106, 0.55)',
+    backgroundColor: 'rgba(212, 169, 106, 0.12)',
+  },
+  leaderBadgeText: {
+    ...typeface.sansMedium,
+    fontSize: fontSize.sm,
+    color: palette.goldLight,
+  },
   avatar: {
     width: 72,
     height: 72,
@@ -405,7 +507,7 @@ const styles = StyleSheet.create({
   },
   avatarText: { ...typeface.serifBold, fontSize: 28, color: '#1a160e' },
   nameEditRow: {
-    marginTop: 12,
+    marginTop: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -451,7 +553,17 @@ const styles = StyleSheet.create({
   },
   gatheringLabel: { ...typeface.sans, fontSize: fontSize.xs, marginBottom: 4 },
   gatheringName: { ...typeface.sansMedium, fontSize: fontSize.md, lineHeight: 22 },
-  inviteCode: { ...typeface.mono, fontSize: fontSize.md, marginTop: 10, letterSpacing: 1 },
+  inviteCodeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 10,
+    borderWidth: 1,
+  },
+  inviteCode: { ...typeface.mono, fontSize: fontSize.md, letterSpacing: 1, flex: 1, minWidth: 0 },
   gatheringHint: { ...typeface.sans, fontSize: fontSize.xs, marginTop: 8, lineHeight: 18 },
   shareInviteBtn: {
     marginTop: 12,
@@ -510,30 +622,79 @@ const styles = StyleSheet.create({
   },
   leaderTitle: { ...typeface.sansMedium, fontSize: fontSize.md },
   leaderSub: { ...typeface.sans, fontSize: fontSize.sm, marginTop: 6 },
-  leaderMenu: { paddingHorizontal: 16, marginTop: 8 },
-  menuTitle: { ...typeface.serifBold, fontSize: fontSize.lg, marginBottom: 10 },
-  menuItem: {
-    padding: 16,
-    borderRadius: 12,
+  leaderMenu: { paddingHorizontal: 16, marginTop: 20 },
+  leaderMenuPanel: {
+    borderRadius: 16,
     borderWidth: 1,
+    padding: 18,
     marginBottom: 8,
   },
-  myWorshipHint: { ...typeface.sans, fontSize: fontSize.sm, marginBottom: 10, lineHeight: 20 },
-  myWorshipCard: {
+  leaderPanelTitle: { ...typeface.serifBold, fontSize: fontSize.xl },
+  leaderPanelSub: { ...typeface.sans, fontSize: fontSize.sm, lineHeight: 21, marginTop: 8 },
+  leaderNotice: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginTop: 14,
+    padding: 12,
     borderRadius: 12,
     borderWidth: 1,
-    padding: 14,
-    marginBottom: 10,
   },
-  myWorshipName: { ...typeface.sansMedium, fontSize: fontSize.md },
-  myWorshipDate: { ...typeface.mono, fontSize: fontSize.xs, marginTop: 6 },
-  myWorshipActions: { flexDirection: 'row', gap: 10, marginTop: 12 },
+  leaderNoticeText: { ...typeface.sans, fontSize: fontSize.sm, flex: 1, lineHeight: 20 },
+  leaderSectionLabel: {
+    ...typeface.sansMedium,
+    fontSize: fontSize.xs,
+    letterSpacing: 1.2,
+    textTransform: 'uppercase' as const,
+    marginTop: 20,
+  },
+  leaderSectionTitle: { ...typeface.serifBold, fontSize: fontSize.lg, marginTop: 4 },
+  leaderSectionHint: { ...typeface.sans, fontSize: fontSize.sm, marginTop: 6, lineHeight: 20 },
+  leaderActionCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 14,
+    marginTop: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+  },
+  leaderActionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  leaderActionTextCol: { flex: 1, minWidth: 0 },
+  leaderActionPrimary: { ...typeface.sansMedium, fontSize: fontSize.md },
+  leaderActionSecondary: { ...typeface.sans, fontSize: fontSize.sm, marginTop: 4, lineHeight: 19 },
+  leaderDivider: { height: StyleSheet.hairlineWidth, marginTop: 22, marginBottom: 2 },
+  leaderBlockHeading: {
+    ...typeface.serifBold,
+    fontSize: fontSize.lg,
+    marginTop: 22,
+    marginBottom: 4,
+  },
+  myWorshipHint: { ...typeface.sans, fontSize: fontSize.sm, marginBottom: 12, lineHeight: 20 },
+  myWorshipCard: {
+    borderRadius: 14,
+    borderWidth: 1,
+    padding: 16,
+    marginBottom: 12,
+  },
+  myWorshipName: { ...typeface.serifBold, fontSize: fontSize.md, marginTop: 6, lineHeight: 24 },
+  myWorshipDate: { ...typeface.mono, fontSize: fontSize.xs },
+  myWorshipActionHint: { ...typeface.sans, fontSize: fontSize.xs, marginTop: 8 },
+  myWorshipActions: { flexDirection: 'row', gap: 10, marginTop: 14 },
   myWorshipBtn: {
     flex: 1,
-    paddingVertical: 10,
-    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 12,
     borderWidth: 1,
     alignItems: 'center',
   },
+  myWorshipBtnLabel: { ...typeface.sans, fontSize: fontSize.xs, marginBottom: 2 },
   myWorshipBtnText: { ...typeface.sansMedium, fontSize: fontSize.sm },
 });

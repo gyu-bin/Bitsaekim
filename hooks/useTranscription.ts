@@ -46,6 +46,63 @@ export function useMyTranscriptions(limit = 80) {
   });
 }
 
+/** 예배 홈: 예배별 필사 곡 수 (가벼운 집계) */
+export function useTranscriptionCountsByWorship() {
+  const deviceId = useUserStore((s) => s.deviceId);
+
+  return useQuery({
+    queryKey: ['transcription-counts-by-worship', deviceId],
+    queryFn: async () => {
+      if (!deviceId) return {} as Record<string, number>;
+      const { data, error } = await supabase
+        .from('transcriptions')
+        .select('worship_id')
+        .eq('device_id', deviceId);
+      if (error) throw error;
+      const map: Record<string, number> = {};
+      for (const row of data ?? []) {
+        const wid = row.worship_id as string | null;
+        if (!wid) continue;
+        map[wid] = (map[wid] ?? 0) + 1;
+      }
+      return map;
+    },
+    enabled: !!deviceId,
+  });
+}
+
+/** 한 예배 안에서 날짜별로 묶을 필사 목록 */
+export function useTranscriptionsForWorship(worshipId: string | undefined) {
+  const deviceId = useUserStore((s) => s.deviceId);
+
+  return useQuery({
+    queryKey: ['transcriptions-for-worship', deviceId, worshipId],
+    queryFn: async () => {
+      if (!deviceId || !worshipId) return [] as MyTranscriptionRow[];
+      const { data, error } = await supabase
+        .from('transcriptions')
+        .select(
+          `
+          id,
+          worship_id,
+          song_id,
+          mode,
+          completed_at,
+          song:songs(title, artist),
+          worship:worship_services(name)
+        `
+        )
+        .eq('device_id', deviceId)
+        .eq('worship_id', worshipId)
+        .order('completed_at', { ascending: false });
+      if (error) throw error;
+      const rows = data ?? [];
+      return rows.map((raw: Record<string, unknown>) => mapTranscriptionRaw(raw));
+    },
+    enabled: !!deviceId && !!worshipId,
+  });
+}
+
 function mapTranscriptionRaw(raw: Record<string, unknown>): MyTranscriptionRow {
   const song = raw.song;
   const worship = raw.worship;
@@ -177,6 +234,8 @@ export function useRecordTranscription() {
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['transcription-stats'] });
       qc.invalidateQueries({ queryKey: ['transcription-list'] });
+      qc.invalidateQueries({ queryKey: ['transcription-counts-by-worship'] });
+      qc.invalidateQueries({ queryKey: ['transcriptions-for-worship'] });
     },
   });
 }

@@ -76,6 +76,11 @@ export default function GalleryScreen() {
         keyExtractor={(item) => item.id}
         numColumns={2}
         columnWrapperStyle={styles.row}
+        removeClippedSubviews={false}
+        windowSize={9}
+        initialNumToRender={8}
+        maxToRenderPerBatch={6}
+        updateCellsBatchingPeriod={50}
         ListHeaderComponent={listHeader}
         contentContainerStyle={[styles.listContent, { paddingBottom: listPadBottom }]}
         refreshControl={
@@ -134,11 +139,11 @@ export default function GalleryScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  listHeader: { paddingBottom: 2 },
+  listHeader: { paddingBottom: 10 },
   headerBlock: {
     paddingHorizontal: 20,
-    paddingTop: 4,
-    paddingBottom: 0,
+    paddingTop: 6,
+    paddingBottom: 4,
   },
   title: {
     ...typeface.serifBold,
@@ -151,9 +156,14 @@ const styles = StyleSheet.create({
     lineHeight: 18,
   },
   pullHint: { ...typeface.sans, fontSize: fontSize.xs, marginTop: 8, lineHeight: 16 },
-  row: { justifyContent: 'space-between', paddingHorizontal: 12 },
-  listContent: {},
-  cell: { flex: 1, maxWidth: '50%' },
+  row: {
+    justifyContent: 'space-between',
+    paddingHorizontal: 14,
+    gap: 12,
+    marginBottom: 2,
+  },
+  listContent: { paddingTop: 4 },
+  cell: { flex: 1, maxWidth: '50%', paddingHorizontal: 4 },
   loader: { marginTop: 16, marginBottom: 8 },
   empty: { textAlign: 'center', marginTop: 12, ...typeface.sans, fontSize: fontSize.sm },
   fabWrap: {

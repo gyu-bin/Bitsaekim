@@ -4,8 +4,8 @@ import { Alert } from 'react-native';
 
 import { StackBackButton } from '@/components/navigation/StackBackButton';
 import { colors } from '@/constants/colors';
-import { useUserStore } from '@/stores/userStore';
 import { useThemeStore } from '@/stores/themeStore';
+import { useUserStore } from '@/stores/userStore';
 
 export default function LeaderLayout() {
   const role = useUserStore((s) => s.role);
@@ -36,7 +36,7 @@ export default function LeaderLayout() {
       }}
     >
       <Stack.Screen name="gathering/create" options={{ title: '모임 만들기' }} />
-      <Stack.Screen name="worship/create" options={{ title: '예배 생성' }} />
+      <Stack.Screen name="worship/create" options={{ title: '콘티 만들기' }} />
       <Stack.Screen name="worship/[id]/edit" options={{ title: '예배 수정' }} />
       <Stack.Screen name="worship/[id]/conti" options={{ title: '콘티 편성' }} />
       <Stack.Screen name="song/create" options={{ title: '찬양 추가' }} />

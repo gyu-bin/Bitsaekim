@@ -22,6 +22,14 @@ export default function TranscribeLayout() {
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen
+        name="[worshipId]/index"
+        options={{
+          headerShown: true,
+          title: '예배',
+          headerLeft: back,
+        }}
+      />
+      <Stack.Screen
         name="[worshipId]/[setlistId]"
         options={{
           headerShown: true,

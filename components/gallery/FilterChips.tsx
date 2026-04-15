@@ -65,8 +65,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexGrow: 0,
     gap: 8,
-    paddingTop: 2,
-    paddingBottom: 4,
+    paddingTop: 4,
+    paddingBottom: 10,
     paddingHorizontal: 20,
   },
   chip: {

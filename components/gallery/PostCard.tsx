@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useQueryClient } from '@tanstack/react-query';
-import { Image } from 'expo-image';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Image, useImage } from 'expo-image';
+import { memo, useCallback, useEffect, useMemo, useState } from 'react';
 import {
   Alert,
   Linking,
@@ -28,7 +28,7 @@ import {
 import { useUserStore } from '@/stores/userStore';
 import type { GalleryPost } from '@/types';
 
-type Props = { post: GalleryPost };
+export type PostCardProps = { post: GalleryPost };
 
 function formatCreatedAt(iso: string) {
   const d = new Date(iso);
@@ -41,7 +41,63 @@ function withHttpScheme(raw: string) {
   return `https://${t}`;
 }
 
-export function PostCard({ post }: Props) {
+/** 로드 전 슬롯 비율 (RN `aspectRatio` = 가로/세로) */
+const THUMB_FALLBACK_ASPECT = 3 / 4;
+
+type GalleryPostThumbProps = {
+  uri: string;
+  postId: string;
+  accentLight: string;
+  /** 서명 전 공개 URL 등, 메인 `uri`와 다를 때만 플레이스홀더로 사용 */
+  placeholderFallbackUri?: string;
+  onRecoverLoadFailure: () => void;
+};
+
+/** `onLoad` 미사용 → expo-image의 nativeEvent deprecation 경고 없이 비율·표시 처리 */
+const GalleryPostThumb = memo(function GalleryPostThumb({
+  uri,
+  postId,
+  accentLight,
+  placeholderFallbackUri,
+  onRecoverLoadFailure,
+}: GalleryPostThumbProps) {
+  const img = useImage(
+    uri,
+    {
+      onError() {
+        onRecoverLoadFailure();
+      },
+    },
+    [postId, uri]
+  );
+
+  const thumbAspectRatio =
+    img != null && img.width > 0 && img.height > 0 ? img.width / img.height : THUMB_FALLBACK_ASPECT;
+
+  const thumbPlaceholder =
+    placeholderFallbackUri && placeholderFallbackUri !== uri
+      ? { uri: placeholderFallbackUri }
+      : undefined;
+
+  return (
+    <View style={[styles.imgBox, { backgroundColor: accentLight, aspectRatio: thumbAspectRatio }]}>
+      {img != null ? (
+        <Image
+          recyclingKey={postId}
+          source={img}
+          placeholder={thumbPlaceholder}
+          placeholderContentFit="cover"
+          style={styles.img}
+          contentFit="cover"
+          transition={120}
+          cachePolicy="memory-disk"
+        />
+      ) : null}
+    </View>
+  );
+});
+
+function PostCardInner({ post }: PostCardProps) {
   const c = useThemeColors();
   const insets = useSafeAreaInsets();
   const qc = useQueryClient();
@@ -58,32 +114,34 @@ export function PostCard({ post }: Props) {
     return { width: w, height: h };
   }, [winW, winH, insets.top, insets.bottom]);
   const canDeleteMyPost = Boolean(deviceId && post.device_id === deviceId);
-  const resolvedForPost = resolveGalleryImageUrlForDisplay(post.image_url);
-  const hasImage = resolvedForPost != null;
+  const fallbackUri = useMemo(
+    () => resolveGalleryImageUrlForDisplay(post.image_url),
+    [post.image_url]
+  );
+  const hasImage = fallbackUri != null;
   const [imgFailed, setImgFailed] = useState(false);
   const [previewOpen, setPreviewOpen] = useState(false);
-  const [displayUri, setDisplayUri] = useState<string | null>(() =>
-    resolveGalleryImageUrlForDisplay(post.image_url)
-  );
+  /** 서명 URL 등 비동기로 확정된 주소 (null이면 공개 URL 폴백) */
+  const [loadedUri, setLoadedUri] = useState<string | null>(null);
+  const imageUri = loadedUri ?? fallbackUri;
   const [signedTried, setSignedTried] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [previewMenuOpen, setPreviewMenuOpen] = useState(false);
 
   useEffect(() => {
+    let cancelled = false;
     setImgFailed(false);
     setSignedTried(false);
-    const sync = resolveGalleryImageUrlForDisplay(post.image_url);
-    setDisplayUri(sync);
-    let cancelled = false;
+    setLoadedUri(null);
     void (async () => {
       const preferred = await getPreferredGalleryDisplayUrl(post.image_url);
       if (cancelled) return;
-      if (preferred) setDisplayUri(preferred);
+      setLoadedUri(preferred ?? fallbackUri);
     })();
     return () => {
       cancelled = true;
     };
-  }, [post.id, post.image_url]);
+  }, [post.id, post.image_url, fallbackUri]);
 
   useEffect(() => {
     if (!previewOpen) setPreviewMenuOpen(false);
@@ -99,7 +157,7 @@ export function PostCard({ post }: Props) {
     void (async () => {
       const signed = await getGallerySignedImageUrl(raw);
       if (signed) {
-        setDisplayUri(signed);
+        setLoadedUri(signed);
       } else {
         setImgFailed(true);
       }
@@ -126,15 +184,17 @@ export function PostCard({ post }: Props) {
     return fromPost || '이름 없음';
   }, [deviceId, post.device_id, post.user?.name, myDisplayName]);
   const authorLine = `작성 · ${authorName}`;
-  /** 썸네일: 로드 실패 시 이모지·플레이스홀더 */
-  const showThumbImage = hasImage && !imgFailed && !!displayUri;
+  /** 공개 URL → 서명 URL 전환 시 크로스페이드용 */
+  const crossfadePlaceholderUri =
+    fallbackUri && imageUri && fallbackUri !== imageUri ? fallbackUri : undefined;
+  const previewThumbPlaceholder = crossfadePlaceholderUri ? { uri: crossfadePlaceholderUri } : undefined;
+  const showThumbImage = hasImage && !imgFailed && !!imageUri;
   /**
    * 크게보기: 이미지 로드가 실패해도(image_url이 있으면) 탭은 먹히게 함.
    * 이전에는 imgFailed 시 Pressable이 disabled라 항목이 전혀 눌리지 않았음.
    */
   const hasImageUrl = Boolean(post.image_url?.trim());
-  const canOpenImagePreview =
-    hasImageUrl && (resolvedForPost != null || displayUri != null);
+  const canOpenImagePreview = hasImageUrl && imageUri != null;
 
   const openImagePreview = useCallback(() => {
     if (canOpenImagePreview) setPreviewOpen(true);
@@ -174,16 +234,16 @@ export function PostCard({ post }: Props) {
 
   const sharePreviewImage = useCallback(async () => {
     setPreviewMenuOpen(false);
-    if (!displayUri) return;
+    if (!imageUri) return;
     try {
       await Share.share({
-        message: displayUri,
-        url: displayUri,
+        message: imageUri,
+        url: imageUri,
       });
     } catch {
       /* 사용자가 시트를 닫은 경우 등 */
     }
-  }, [displayUri]);
+  }, [imageUri]);
 
   return (
     <View style={[styles.card, { backgroundColor: c.card, borderColor: c.border }]}>
@@ -197,20 +257,28 @@ export function PostCard({ post }: Props) {
         accessibilityRole={canOpenImagePreview ? 'button' : undefined}
         accessibilityLabel={canOpenImagePreview ? '사진 크게 보기' : undefined}
       >
-        <View style={[styles.imgBox, { backgroundColor: c.accentLight }]}>
-          {showThumbImage ? (
-            <Image
-              recyclingKey={post.id}
-              key={displayUri ?? 'thumb'}
-              source={{ uri: displayUri! }}
-              style={styles.img}
-              contentFit="cover"
-              onError={onImageError}
-            />
-          ) : (
+        {showThumbImage && imageUri ? (
+          <GalleryPostThumb
+            uri={imageUri}
+            postId={post.id}
+            accentLight={c.accentLight}
+            placeholderFallbackUri={crossfadePlaceholderUri}
+            onRecoverLoadFailure={onImageError}
+          />
+        ) : (
+          <View
+            style={[
+              styles.imgBox,
+              {
+                backgroundColor: c.accentLight,
+                aspectRatio: THUMB_FALLBACK_ASPECT,
+                alignItems: 'center',
+              },
+            ]}
+          >
             <Text style={styles.placeholderEmoji}>{placeholder}</Text>
-          )}
-        </View>
+          </View>
+        )}
 
         <View style={styles.bodyWrap}>
           <Text style={[styles.author, { color: c.textSub }]} numberOfLines={1}>
@@ -262,15 +330,19 @@ export function PostCard({ post }: Props) {
             accessibilityLabel="닫기"
           >
             <View style={styles.modalImageWrap} pointerEvents="none">
-              {displayUri ? (
+              {imageUri ? (
                 <Image
-                  key={displayUri}
-                  source={{ uri: displayUri }}
+                  recyclingKey={`${post.id}-preview`}
+                  source={{ uri: imageUri }}
+                  placeholder={previewThumbPlaceholder}
+                  placeholderContentFit="contain"
                   style={{
                     width: previewModalImageSize.width,
                     height: previewModalImageSize.height,
                   }}
                   contentFit="contain"
+                  transition={120}
+                  cachePolicy="memory-disk"
                 />
               ) : (
                 <Text style={[styles.modalFallback, { color: 'rgba(255,255,255,0.85)' }]}>
@@ -372,13 +444,32 @@ export function PostCard({ post }: Props) {
   );
 }
 
+function postCardPropsEqual(prev: PostCardProps, next: PostCardProps) {
+  const a = prev.post;
+  const b = next.post;
+  return (
+    a.id === b.id &&
+    a.image_url === b.image_url &&
+    a.body === b.body &&
+    a.lyrics_share === b.lyrics_share &&
+    a.link_url === b.link_url &&
+    a.likes_count === b.likes_count &&
+    a.is_liked === b.is_liked &&
+    a.user?.name === b.user?.name &&
+    a.device_id === b.device_id &&
+    a.song?.title === b.song?.title &&
+    a.worship?.name === b.worship?.name
+  );
+}
+
+export const PostCard = memo(PostCardInner, postCardPropsEqual);
+
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 12,
+    borderRadius: 14,
     borderWidth: 1,
     overflow: 'hidden',
     flex: 1,
-    margin: 4,
   },
   cardPressable: {
     borderTopLeftRadius: 11,
@@ -389,13 +480,14 @@ const styles = StyleSheet.create({
     opacity: 0.94,
   },
   imgBox: {
-    height: 300,
-    alignItems: 'center',
+    width: '100%',
+    overflow: 'hidden',
+    alignItems: 'stretch',
     justifyContent: 'center',
   },
   img: { width: '100%', height: '100%' },
   placeholderEmoji: { fontSize: 40 },
-  bodyWrap: { padding: 10, gap: 4 },
+  bodyWrap: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 10, gap: 6 },
   author: {
     ...typeface.sansMedium,
     fontSize: fontSize.xs,
@@ -425,7 +517,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: 6,
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+    marginTop: 2,
   },
   date: { ...typeface.mono, fontSize: fontSize.xs },
   modalRoot: {

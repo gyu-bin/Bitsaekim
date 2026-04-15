@@ -92,6 +92,8 @@ export default function MyTranscriptionsScreen() {
                 await qc.invalidateQueries({ queryKey: ['transcription-list'] });
                 await qc.invalidateQueries({ queryKey: ['transcription-stats'] });
                 await qc.invalidateQueries({ queryKey: ['transcription'] });
+                await qc.invalidateQueries({ queryKey: ['transcription-counts-by-worship'] });
+                await qc.invalidateQueries({ queryKey: ['transcriptions-for-worship'] });
               } finally {
                 setDeleting(false);
               }
