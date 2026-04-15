@@ -28,6 +28,9 @@ export { ErrorBoundary } from 'expo-router';
 
 SplashScreen.preventAutoHideAsync();
 
+/** 네이티브 스플래시 이미지가 충분히 보이도록, 준비 완료 후에도 최소 이 시간은 유지 */
+const SPLASH_MIN_VISIBLE_MS = 2300;
+
 function useUserStoreHydrated() {
   const [ok, setOk] = useState(() => useUserStore.persist.hasHydrated());
   useEffect(() => {
@@ -108,17 +111,24 @@ export default function RootLayout() {
   }, [error]);
 
   const hydrated = useUserStoreHydrated();
+  const [minSplashElapsed, setMinSplashElapsed] = useState(false);
 
   useEffect(() => {
     if (!loaded || !hydrated) return;
+    const id = setTimeout(() => setMinSplashElapsed(true), SPLASH_MIN_VISIBLE_MS);
+    return () => clearTimeout(id);
+  }, [loaded, hydrated]);
+
+  useEffect(() => {
+    if (!loaded || !hydrated || !minSplashElapsed) return;
     void SplashScreen.hideAsync();
     const task = InteractionManager.runAfterInteractions(() => {
       void seedSongsIfEmpty();
     });
     return () => task.cancel();
-  }, [loaded, hydrated]);
+  }, [loaded, hydrated, minSplashElapsed]);
 
-  if (!loaded || !hydrated) {
+  if (!loaded || !hydrated || !minSplashElapsed) {
     return null;
   }
 

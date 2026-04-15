@@ -8,13 +8,19 @@
     "scheme": "bitsaekim",
     "userInterfaceStyle": "automatic",
     "splash": {
-      "image": "./assets/icon/splash-iphone-1290x2796.png",
+      "image": "./assets/icon/splash/splash-iphone-1290x2796.png",
       "resizeMode": "contain",
-      "backgroundColor": "#0e0a04"
+      "backgroundColor": "#f7edd8"
     },
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.bitsaekim.app",
+      "splash": {
+        "image": "./assets/icon/splash/splash-iphone-1290x2796.png",
+        "tabletImage": "./assets/icon/splash/splash-ipad-2048x2732.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#f7edd8"
+      },
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }
@@ -23,7 +29,12 @@
       "package": "com.bitsaekim.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/icon/android-512-playstore.png",
-        "backgroundColor": "#0e0a04"
+        "backgroundColor": "#f7edd8"
+      },
+      "splash": {
+        "image": "./assets/icon/splash/splash-android-1080x1920.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#f7edd8"
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
