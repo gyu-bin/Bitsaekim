@@ -7,7 +7,12 @@ type Extra = {
   supabaseAnonKey?: string;
 };
 
-function resolveSupabase(): { url: string; anon: string } {
+/** @supabase/supabase-js는 빈 URL/키로 생성 시 즉시 throw → TestFlight(EAS)에서 env 누락 시 앱이 바로 종료됨 */
+const OFFLINE_SUPABASE_URL = 'https://offline.placeholder.supabase.co';
+const OFFLINE_SUPABASE_ANON_KEY =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiJ9.offline-placeholder-not-configured';
+
+function resolveSupabase(): { url: string; anon: string; configured: boolean } {
   const extra = Constants.expoConfig?.extra as Extra | undefined;
   const url =
     extra?.supabaseUrl?.trim() ||
@@ -17,19 +22,24 @@ function resolveSupabase(): { url: string; anon: string } {
     extra?.supabaseAnonKey?.trim() ||
     process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY?.trim() ||
     '';
-  return { url, anon };
+  const configured = Boolean(url && anon);
+  if (!configured) {
+    return { url: OFFLINE_SUPABASE_URL, anon: OFFLINE_SUPABASE_ANON_KEY, configured: false };
+  }
+  return { url, anon, configured: true };
 }
 
-const { url, anon } = resolveSupabase();
+const resolved = resolveSupabase();
 
-export const supabase = createClient(url, anon, {
+export const supabase = createClient(resolved.url, resolved.anon, {
   auth: {
     storage: AsyncStorage,
-    autoRefreshToken: true,
-    persistSession: true,
+    autoRefreshToken: resolved.configured,
+    persistSession: resolved.configured,
+    detectSessionInUrl: false,
   },
 });
 
 export function isSupabaseConfigured(): boolean {
-  return Boolean(url && anon);
+  return resolved.configured;
 }
