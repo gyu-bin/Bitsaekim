@@ -15,7 +15,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { palette } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase, supabaseMissingConfigUserMessage } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
 
 type RpcJoinRow = {
@@ -55,7 +55,7 @@ export default function JoinGatheringScreen() {
       return;
     }
     if (!isSupabaseConfigured()) {
-      Alert.alert('설정 필요', 'Supabase 환경 변수를 확인해 주세요.');
+      Alert.alert('설정 필요', supabaseMissingConfigUserMessage());
       return;
     }
     setBusy(true);
@@ -92,7 +92,7 @@ export default function JoinGatheringScreen() {
       return;
     }
     if (!isSupabaseConfigured()) {
-      Alert.alert('설정 필요', 'Supabase 환경 변수를 확인해 주세요.');
+      Alert.alert('설정 필요', supabaseMissingConfigUserMessage());
       return;
     }
     setCreateBusy(true);

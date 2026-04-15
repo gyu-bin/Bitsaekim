@@ -43,3 +43,27 @@ export const supabase = createClient(resolved.url, resolved.anon, {
 export function isSupabaseConfigured(): boolean {
   return resolved.configured;
 }
+
+/**
+ * Supabase가 빌드에 없을 때(초대 코드·DB 등 불가). 개발은 .env, 배포는 EAS 환경 변수 안내.
+ */
+export function supabaseMissingConfigUserMessage(): string {
+  if (__DEV__) {
+    return [
+      'Supabase URL·anon 키가 없어 모임 참여를 할 수 없습니다.',
+      '',
+      '프로젝트 루트 `.env`에 아래를 넣고 Metro(개발 서버)를 **완전히 종료한 뒤 다시 시작**하세요.',
+      '• EXPO_PUBLIC_SUPABASE_URL',
+      '• EXPO_PUBLIC_SUPABASE_ANON_KEY',
+      '',
+      '(VITE_SUPABASE_URL, VITE_SUPABASE_PUBLISHABLE_KEY 등은 app.config.ts에서도 읽습니다.)',
+    ].join('\n');
+  }
+  return [
+    '이 앱 빌드에 Supabase URL·키가 포함되어 있지 않습니다.',
+    '',
+    'expo.dev → 프로젝트 → Environment variables에',
+    'EXPO_PUBLIC_SUPABASE_URL, EXPO_PUBLIC_SUPABASE_ANON_KEY를 넣은 뒤',
+    '**앱을 다시 빌드**해야 TestFlight·실기기에서 모임 기능이 동작합니다.',
+  ].join('\n');
+}

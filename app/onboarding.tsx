@@ -21,7 +21,7 @@ import { palette } from '@/constants/colors';
 import { typeface } from '@/constants/fonts';
 import { getDeviceId, setSupabaseDeviceId } from '@/lib/device';
 import { buildGatheringInviteUrl } from '@/lib/gatheringInviteLink';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase, supabaseMissingConfigUserMessage } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
 
 type Flow = 'join' | 'create';
@@ -138,10 +138,7 @@ export default function OnboardingScreen() {
     const name = nameRef.current.trim();
     if (!name) return;
     if (!isSupabaseConfigured()) {
-      Alert.alert(
-        '설정 필요',
-        'Supabase URL·키가 없습니다. .env에 EXPO_PUBLIC_SUPABASE_* 또는 VITE_SUPABASE_*를 넣은 뒤 Metro를 다시 시작해 주세요.'
-      );
+      Alert.alert('설정 필요', supabaseMissingConfigUserMessage());
       return;
     }
     setBusy(true);

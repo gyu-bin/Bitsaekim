@@ -5,7 +5,7 @@ import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fontSize, typeface } from '@/constants/fonts';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { isSupabaseConfigured, supabase, supabaseMissingConfigUserMessage } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
 
 type RpcJoinRow = {
@@ -88,7 +88,7 @@ export default function JoinInviteDeepLinkScreen() {
       if (!isSupabaseConfigured()) {
         if (!cancelled) {
           setStatus('error');
-          setMessage('앱 설정(Supabase)을 확인해 주세요.');
+          setMessage(supabaseMissingConfigUserMessage());
         }
         return;
       }
