@@ -106,9 +106,11 @@ export default function TranscribeWorshipHubScreen() {
 
   const refreshing = worshipRefetching || setlistsQuery.isRefetching;
 
+  const showWorshipLoader = worshipsLoading;
+
   return (
     <View style={[styles.root, { backgroundColor: c.background, paddingBottom: insets.bottom }]}>
-      {worshipsLoading ? (
+      {showWorshipLoader ? (
         <LoadingSpinner />
       ) : !base ? (
         <Text style={[styles.fallback, { color: c.textSub }]}>예배를 찾을 수 없어요.</Text>

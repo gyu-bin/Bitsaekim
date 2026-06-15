@@ -31,6 +31,8 @@ export default function LeaderLayout() {
         headerShown: true,
         headerTintColor: c.text,
         headerStyle: { backgroundColor: c.background },
+        headerTitleStyle: { fontFamily: 'NotoSerifKR_700Bold', fontSize: 17 },
+        headerShadowVisible: false,
         contentStyle: { backgroundColor: c.background },
         headerLeft: () => <StackBackButton fallbackHref="/(tabs)/mypage" />,
       }}

@@ -1,5 +1,4 @@
 import { useQueryClient } from '@tanstack/react-query';
-import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import { useMemo, useState } from 'react';
@@ -7,13 +6,16 @@ import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View 
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { v4 as uuidv4 } from 'uuid';
 
+import { LocalImagePreview } from '@/components/gallery/LocalImagePreview';
 import { Button } from '@/components/ui/Button';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useSongsSearch } from '@/hooks/useSongs';
 import { useWorships } from '@/hooks/useWorships';
 import { insertGallerySharePost } from '@/lib/galleryInsert';
-import { pickAndUploadImage } from '@/lib/image';
+import { refreshGalleryCache } from '@/lib/galleryQuery';
+import { completeGalleryPost } from '@/lib/galleryPostSuccess';
+import { pickGalleryImageUri, uploadGalleryJpegFromUri } from '@/lib/image';
 import { useUserStore } from '@/stores/userStore';
 import type { Song } from '@/types';
 
@@ -55,12 +57,9 @@ export default function GalleryShareChantScreen() {
     }
     setPicking(true);
     try {
-      const url = await pickAndUploadImage(deviceId, postId);
-      if (!url) {
-        Alert.alert('안내', '이미지를 가져오지 못했습니다. 다시 시도해 주세요.');
-        return;
-      }
-      setImageUrl(url);
+      const uri = await pickGalleryImageUri();
+      if (!uri) return;
+      setImageUrl(uri);
     } finally {
       setPicking(false);
     }
@@ -73,12 +72,20 @@ export default function GalleryShareChantScreen() {
     }
     setSubmitting(true);
     try {
+      let uploadedImageUrl: string | null = imageUrl;
+      if (imageUrl && !/^https?:\/\//i.test(imageUrl)) {
+        uploadedImageUrl = await uploadGalleryJpegFromUri(deviceId, postId, imageUrl);
+        if (!uploadedImageUrl) {
+          Alert.alert('오류', '이미지를 업로드하지 못했습니다.');
+          return;
+        }
+      }
       const result = await insertGallerySharePost({
         postId,
         deviceId,
         worshipId,
         songId,
-        imagePublicUrl: imageUrl,
+        imagePublicUrl: uploadedImageUrl,
         body: body.trim() || null,
         link_url: linkUrl.trim() || null,
         lyrics_share: lyricsShare.trim() || null,
@@ -87,10 +94,8 @@ export default function GalleryShareChantScreen() {
         Alert.alert('안내', result.message);
         return;
       }
-      await qc.invalidateQueries({ queryKey: ['gallery'] });
-      Alert.alert('올렸어요', '나눔에 등록되었습니다.', [
-        { text: '확인', onPress: () => router.back() },
-      ]);
+      await refreshGalleryCache(qc);
+      completeGalleryPost('나눔에 등록했어요');
     } catch (e) {
       const msg =
         e && typeof e === 'object' && 'message' in e && typeof e.message === 'string'
@@ -237,12 +242,16 @@ export default function GalleryShareChantScreen() {
       />
 
       <Text style={[styles.sectionLabel, { color: c.textSub, marginTop: 16 }]}>사진 (선택)</Text>
-      <View style={[styles.previewBox, { borderColor: c.border, backgroundColor: c.card }]}>
-        {imageUrl ? (
-          <Image source={{ uri: imageUrl }} style={styles.preview} contentFit="contain" />
-        ) : (
-          <Text style={[styles.previewPlaceholder, { color: c.textSub }]}>악보·캡처를 넣을 수 있어요</Text>
-        )}
+      <View style={styles.previewWrap}>
+        <LocalImagePreview
+          uri={imageUrl}
+          placeholder="악보·캡처를 넣을 수 있어요"
+          placeholderTextColor={c.textSub}
+          borderColor={c.border}
+          backgroundColor={c.card}
+          maxHeightRatio={0.55}
+          minHeight={180}
+        />
       </View>
       <Button
         title={imageUrl ? '다른 사진으로 바꾸기' : '사진·앨범에서 가져오기'}
@@ -263,6 +272,7 @@ export default function GalleryShareChantScreen() {
       <Text style={[styles.footerNote, { color: c.textSub }]}>
         사진·링크·가사·묵상 중 하나 이상 입력해야 올릴 수 있어요.
       </Text>
+
     </ScrollView>
   );
 }
@@ -339,21 +349,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  previewBox: {
-    minHeight: 180,
-    borderRadius: 12,
-    borderWidth: 1,
-    overflow: 'hidden',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  preview: { width: '100%', minHeight: 180 },
-  previewPlaceholder: {
-    ...typeface.sans,
-    fontSize: fontSize.sm,
-    padding: 20,
-    textAlign: 'center',
-  },
+  previewWrap: { marginTop: 8 },
   btn: { marginTop: 12 },
   footerNote: {
     ...typeface.sans,

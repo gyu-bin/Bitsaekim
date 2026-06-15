@@ -12,18 +12,23 @@ export default function GalleryStackLayout() {
     <Stack
       screenOptions={{
         headerShown: false,
-        headerStyle: { backgroundColor: c.card },
+        headerStyle: { backgroundColor: c.background },
+        headerShadowVisible: false,
         headerTintColor: c.text,
         headerTitleStyle: { ...typeface.sansMedium, fontSize: fontSize.md, color: c.text },
+        headerBackTitle: '',
+        contentStyle: { backgroundColor: c.background },
       }}
     >
-      <Stack.Screen name="index" />
+      <Stack.Screen name="index" options={{ title: '나눔' }} />
       <Stack.Screen
         name="compose"
         options={{
           headerShown: true,
           title: '나눔에 올리기',
           presentation: 'card',
+          headerBackTitle: '',
+          headerBackButtonDisplayMode: 'minimal',
         }}
       />
       <Stack.Screen
@@ -32,6 +37,8 @@ export default function GalleryStackLayout() {
           headerShown: true,
           title: '찬양·링크 나눔',
           presentation: 'card',
+          headerBackTitle: '',
+          headerBackButtonDisplayMode: 'minimal',
         }}
       />
     </Stack>

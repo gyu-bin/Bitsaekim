@@ -99,6 +99,50 @@ function isRpcMissing(err: { message?: string } | null): boolean {
   );
 }
 
+/** 나눔 글 본문·링크·가사 수정 (본인 글) */
+export async function updateGalleryPost(args: {
+  postId: string;
+  deviceId: string;
+  body: string | null;
+  link_url: string | null;
+  lyrics_share: string | null;
+}): Promise<{ ok: true } | { ok: false; message: string }> {
+  const deviceId = args.deviceId.trim();
+  const body = args.body?.trim() || null;
+  const link = args.link_url?.trim() || null;
+  const lyrics = args.lyrics_share?.trim() || null;
+
+  const rpc = await supabase.rpc('update_gallery_post_for_device', {
+    p_post_id: args.postId,
+    p_device_id: deviceId,
+    p_body: body ?? '',
+    p_link_url: link ?? '',
+    p_lyrics_share: lyrics ?? '',
+  });
+
+  if (!rpc.error && rpc.data === true) {
+    return { ok: true };
+  }
+
+  if (rpc.error && !isRpcMissing(rpc.error)) {
+    return { ok: false, message: rpc.error.message ?? '글을 수정하지 못했습니다.' };
+  }
+
+  const { data, error } = await supabase
+    .from('gallery_posts')
+    .update({ body, link_url: link, lyrics_share: lyrics })
+    .eq('id', args.postId)
+    .eq('device_id', deviceId)
+    .select('id');
+  if (error) {
+    return { ok: false, message: error.message ?? '글을 수정하지 못했습니다.' };
+  }
+  if (!data?.length) {
+    return { ok: false, message: '글을 찾을 수 없거나 수정 권한이 없습니다.' };
+  }
+  return { ok: true };
+}
+
 /** 필사 완료 후 자동 나눔에 묵상만 덧붙일 때 (같은 글의 body 갱신) */
 export async function updateGalleryPostBody(args: {
   postId: string;

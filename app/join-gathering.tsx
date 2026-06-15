@@ -13,7 +13,7 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
-import { palette } from '@/constants/colors';
+import { palette, radius } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
 import { isSupabaseConfigured, supabase, supabaseMissingConfigUserMessage } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
@@ -121,7 +121,9 @@ export default function JoinGatheringScreen() {
       style={[styles.root, pad]}
       behavior={Platform.OS === 'ios' ? 'padding' : undefined}
     >
+      <View style={styles.glowTop} pointerEvents="none" />
       <View style={styles.inner}>
+        <Text style={styles.mark}>✦</Text>
         <Text style={styles.title}>모임 참여</Text>
         <Text style={styles.sub}>
           모임마다 코드가 다릅니다 (예: 헵시바 모임, 싱더글로리 모임). 아래에 코드를 입력하거나, 인도자가 보낸{' '}
@@ -170,25 +172,45 @@ export default function JoinGatheringScreen() {
 }
 
 const styles = StyleSheet.create({
-  root: { flex: 1, backgroundColor: '#141008' },
+  root: { flex: 1, backgroundColor: palette.ink },
+  glowTop: {
+    position: 'absolute',
+    top: -60,
+    alignSelf: 'center',
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: 'rgba(212, 169, 106, 0.12)',
+  },
   inner: { flex: 1, paddingHorizontal: 28, justifyContent: 'center' },
+  mark: {
+    fontSize: 32,
+    color: palette.gold,
+    textAlign: 'center',
+    marginBottom: 8,
+  },
   title: {
     ...typeface.serifBold,
-    fontSize: 28,
+    fontSize: 32,
     color: '#fff',
-    marginBottom: 10,
+    marginBottom: 12,
+    textAlign: 'center',
   },
   sub: {
     ...typeface.sans,
     fontSize: fontSize.sm,
-    color: 'rgba(255,255,255,0.75)',
-    lineHeight: 20,
+    color: 'rgba(255,255,255,0.72)',
+    lineHeight: 21,
     marginBottom: 28,
+    textAlign: 'center',
   },
-  subEm: { ...typeface.sansMedium, color: palette.gold },
+  subEm: { ...typeface.sansMedium, color: palette.goldLight },
   label: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.65)',
+    ...typeface.sansMedium,
+    fontSize: 12,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    color: 'rgba(255,255,255,0.55)',
     marginBottom: 8,
   },
   input: {
@@ -196,39 +218,41 @@ const styles = StyleSheet.create({
     fontSize: 17,
     minHeight: 52,
     borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.35)',
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    borderColor: 'rgba(255,255,255,0.28)',
+    borderRadius: radius.lg,
+    backgroundColor: 'rgba(255,255,255,0.07)',
     paddingHorizontal: 16,
     paddingVertical: 14,
     color: '#fff',
     marginBottom: 20,
   },
-  btn: { backgroundColor: palette.gold },
+  btn: { marginTop: 4 },
   divider: {
     ...typeface.sans,
     fontSize: fontSize.xs,
-    color: 'rgba(255,255,255,0.45)',
+    color: 'rgba(255,255,255,0.4)',
     textAlign: 'center',
-    marginVertical: 16,
+    marginVertical: 18,
   },
   linkBtn: {
     borderWidth: 1,
     borderColor: palette.gold,
-    borderRadius: 12,
+    borderRadius: radius.lg,
     paddingVertical: 14,
     alignItems: 'center',
+    backgroundColor: 'rgba(184, 147, 90, 0.1)',
   },
   linkBtnText: {
     ...typeface.sansMedium,
     fontSize: fontSize.sm,
-    color: palette.gold,
+    color: palette.goldLight,
   },
   hintSmall: {
     ...typeface.sans,
     fontSize: fontSize.xs,
-    color: 'rgba(255,255,255,0.5)',
-    marginTop: 20,
+    color: 'rgba(255,255,255,0.42)',
     lineHeight: 18,
+    marginTop: 16,
+    textAlign: 'center',
   },
 });

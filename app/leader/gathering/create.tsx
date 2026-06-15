@@ -2,10 +2,11 @@ import { useQueryClient } from '@tanstack/react-query';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
-import { useState } from 'react';
-import { Alert, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
+import { useCallback, useRef, useState } from 'react';
+import { Alert, Platform, ScrollView, Share, StyleSheet, Text, TextInput, View } from 'react-native';
 
 import { Button } from '@/components/ui/Button';
+import { WebNativeTextInput } from '@/components/ui/WebNativeTextInput';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { buildGatheringInviteUrl } from '@/lib/gatheringInviteLink';
@@ -25,11 +26,15 @@ export default function LeaderCreateGatheringScreen() {
   const c = useThemeColors();
   const qc = useQueryClient();
   const deviceId = useUserStore((s) => s.deviceId);
-  const [gatheringName, setGatheringName] = useState('');
+  const gatheringNameRef = useRef('');
   const [loading, setLoading] = useState(false);
 
+  const onGatheringNameChange = useCallback((text: string) => {
+    gatheringNameRef.current = text;
+  }, []);
+
   const submit = async () => {
-    const trimmed = gatheringName.trim();
+    const trimmed = gatheringNameRef.current.trim();
     if (!trimmed) {
       Alert.alert('알림', '모임 이름을 입력해 주세요.');
       return;
@@ -87,15 +92,30 @@ export default function LeaderCreateGatheringScreen() {
         초대 코드만 알려줘도 됩니다.
       </Text>
       <Text style={[styles.label, { color: c.textSub }]}>모임 이름 *</Text>
-      <TextInput
-        value={gatheringName}
-        onChangeText={setGatheringName}
-        placeholder="예: 헵시바 모임"
-        placeholderTextColor={c.textSub}
-        style={[styles.input, { borderColor: c.border, color: c.text, backgroundColor: c.card }]}
-        autoCorrect={false}
-        autoCapitalize="sentences"
-      />
+      {Platform.OS === 'web' ? (
+        <WebNativeTextInput
+          textRef={gatheringNameRef}
+          placeholder="예: 헵시바 모임"
+          autoCapitalize="sentences"
+          onTextChange={() => {}}
+        />
+      ) : (
+        <TextInput
+          placeholder="예: 헵시바 모임"
+          placeholderTextColor={c.textSub}
+          defaultValue=""
+          onChangeText={onGatheringNameChange}
+          style={[styles.input, { borderColor: c.border, color: c.text, backgroundColor: c.card }]}
+          autoCorrect={false}
+          spellCheck={false}
+          autoCapitalize="sentences"
+          keyboardType="default"
+          textContentType="none"
+          importantForAutofill="no"
+          returnKeyType="done"
+          clearButtonMode="while-editing"
+        />
+      )}
       <Button title="모임 만들기" onPress={() => void submit()} loading={loading} disabled={loading} />
     </ScrollView>
   );

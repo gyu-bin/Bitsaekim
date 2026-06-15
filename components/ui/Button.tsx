@@ -9,6 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
+import { radius, shadow } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
@@ -47,27 +48,31 @@ export function Button({
       onPress={handlePress}
       style={({ pressed }) => [
         styles.base,
-        variant === 'primary' && { backgroundColor: c.accent },
+        variant === 'primary' && [styles.primary, shadow.accent, { backgroundColor: c.accent }],
         variant === 'ghost' && { backgroundColor: 'transparent' },
         variant === 'outline' && {
-          backgroundColor: 'transparent',
-          borderWidth: 1,
+          backgroundColor: c.card,
+          borderWidth: StyleSheet.hairlineWidth,
           borderColor: c.border,
         },
-        (pressed || disabled) && { opacity: 0.85 },
+        (pressed || disabled) && { opacity: pressed ? 0.88 : 0.55 },
         containerStyle,
       ]}
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={variant === 'primary' ? '#fff' : c.accent} />
+        <ActivityIndicator color={variant === 'primary' ? c.onAccent : c.accent} />
       ) : (
         <Text
           style={[
             styles.text,
             {
               color:
-                variant === 'primary' ? '#fff' : variant === 'outline' ? c.text : c.accent,
+                variant === 'primary'
+                  ? c.onAccent
+                  : variant === 'outline'
+                    ? c.text
+                    : c.accent,
             },
             textStyle,
           ]}
@@ -81,15 +86,17 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    paddingVertical: 14,
-    paddingHorizontal: 20,
-    borderRadius: 12,
+    paddingVertical: 15,
+    paddingHorizontal: 24,
+    borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 48,
+    minHeight: 52,
   },
+  primary: {},
   text: {
     ...typeface.sansMedium,
     fontSize: fontSize.md,
+    letterSpacing: 0.2,
   },
 });

@@ -1,5 +1,6 @@
 import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 
+import { radius } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { WorshipService } from '@/types';
@@ -10,9 +11,10 @@ type Props = {
   worships: WorshipService[];
   active: GalleryFilter;
   onChange: (f: GalleryFilter) => void;
+  horizontalPadding?: number;
 };
 
-export function FilterChips({ worships, active, onChange }: Props) {
+export function FilterChips({ worships, active, onChange, horizontalPadding = 20 }: Props) {
   const c = useThemeColors();
 
   const Chip = ({
@@ -29,15 +31,16 @@ export function FilterChips({ worships, active, onChange }: Props) {
         style={[
           styles.chip,
           {
-            backgroundColor: on ? c.accentLight : c.card,
+            backgroundColor: on ? c.accentMuted : c.card,
             borderColor: on ? c.accent : c.border,
           },
         ]}
+        activeOpacity={0.8}
         accessibilityRole="button"
         accessibilityState={{ selected: on }}
         accessibilityLabel={`필터 ${label}`}
       >
-        <Text style={[styles.chipText, { color: on ? c.accentDark : c.text }]}>{label}</Text>
+        <Text style={[styles.chipText, { color: on ? c.accentDark : c.textMid }]}>{label}</Text>
       </TouchableOpacity>
     );
   };
@@ -47,7 +50,7 @@ export function FilterChips({ worships, active, onChange }: Props) {
       horizontal
       showsHorizontalScrollIndicator={false}
       style={styles.hscroll}
-      contentContainerStyle={styles.row}
+      contentContainerStyle={[styles.row, { paddingHorizontal: horizontalPadding }]}
     >
       <Chip id="all" label="전체" />
       {worships.map((w) => (
@@ -65,16 +68,15 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     flexGrow: 0,
     gap: 8,
-    paddingTop: 4,
-    paddingBottom: 10,
-    paddingHorizontal: 20,
+    paddingTop: 2,
+    paddingBottom: 12,
+    paddingHorizontal: 0,
   },
   chip: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 999,
-    borderWidth: 1,
-    marginRight: 4,
+    paddingHorizontal: 16,
+    paddingVertical: 9,
+    borderRadius: radius.full,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   chipText: { ...typeface.sansMedium, fontSize: fontSize.sm },
 });

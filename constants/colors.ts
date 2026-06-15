@@ -1,33 +1,47 @@
 export const colors = {
   light: {
-    background: '#faf8f4',
-    card: '#ffffff',
-    border: '#ede8e0',
-    text: '#1a160e',
-    textMid: '#4a3f2f',
-    textSub: '#9a8c78',
-    accent: '#b8935a',
-    accentLight: '#fdf4e7',
-    accentDark: '#8a6a32',
+    background: '#EDECE8',
+    card: '#FFFFFF',
+    surface: '#F7F6F3',
+    border: 'rgba(20, 18, 13, 0.1)',
+    text: '#12110E',
+    textMid: '#4E4A44',
+    textSub: '#8B857C',
+    accent: '#A67F3D',
+    accentLight: '#F3EBDD',
+    accentDark: '#7A5C2A',
+    accentMuted: 'rgba(166, 127, 61, 0.14)',
+    onAccent: '#FFFFFF',
+    overlay: 'rgba(18, 17, 14, 0.42)',
+    tabBar: '#FFFFFF',
+    tabBarBorder: 'rgba(20, 18, 13, 0.08)',
   },
   dark: {
-    background: '#141008',
-    card: '#1e1608',
-    border: '#2a2010',
-    text: '#f0ece4',
-    textMid: '#c0b090',
-    textSub: '#6a5a44',
-    accent: '#d4a96a',
-    accentLight: '#2a2010',
-    accentDark: '#b8935a',
+    background: '#0C0B09',
+    card: '#171512',
+    surface: '#1E1B17',
+    border: 'rgba(255, 255, 255, 0.09)',
+    text: '#F4F1EA',
+    textMid: '#C4BCAE',
+    textSub: '#7A746A',
+    accent: '#D4A96A',
+    accentLight: '#2A2318',
+    accentDark: '#B8935A',
+    accentMuted: 'rgba(212, 169, 106, 0.16)',
+    onAccent: '#14120D',
+    overlay: 'rgba(0, 0, 0, 0.58)',
+    tabBar: '#171512',
+    tabBarBorder: 'rgba(255, 255, 255, 0.08)',
   },
 } as const;
 
 export const palette = {
   gold: '#b8935a',
   goldLight: '#f5d98a',
+  goldMuted: '#d4b88a',
   ink: '#1a160e',
-  cream: '#faf8f4',
+  cream: '#f7f3ec',
+  splash: '#f7edd8',
   white: '#ffffff',
 } as const;
 
@@ -36,6 +50,7 @@ export const radius = {
   md: 12,
   lg: 16,
   xl: 20,
+  '2xl': 24,
   full: 999,
 } as const;
 
@@ -51,19 +66,27 @@ export const spacing = {
 
 export const shadow = {
   sm: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
+    shadowColor: '#14120D',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
     shadowRadius: 6,
     elevation: 2,
   },
   md: {
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.12,
-    shadowRadius: 12,
+    shadowColor: '#14120D',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.08,
+    shadowRadius: 16,
     elevation: 4,
+  },
+  accent: {
+    shadowColor: '#B8935A',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.22,
+    shadowRadius: 12,
+    elevation: 5,
   },
 } as const;
 
 export type ThemeName = 'light' | 'dark';
+export type ThemeColors = (typeof colors)[ThemeName];

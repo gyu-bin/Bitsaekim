@@ -55,13 +55,40 @@ async function readUriAsJpegBytes(uri: string): Promise<Uint8Array | null> {
   }
 }
 
+/** 앨범에서 사진만 고릅니다. 업로드·압축 없이 로컬 URI를 바로 반환해 미리보기가 즉시 뜹니다. */
+export async function pickGalleryImageUri(): Promise<string | null> {
+  const result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ['images'],
+    quality: 0.92,
+    exif: false,
+    allowsEditing: false,
+    // iPad 등에서 사진만 체크되고 끝나는 문제 → 네이티브 피커 상단 「추가」 확인 버튼 노출
+    allowsMultipleSelection: true,
+    selectionLimit: 1,
+  });
+
+  if (result.canceled || !result.assets?.[0]?.uri) return null;
+  return result.assets[0].uri;
+}
+
+/** 업로드 직전에만 리사이즈·JPEG 압축 */
+export async function compressGalleryImageUri(uri: string): Promise<string> {
+  const compressed = await ImageManipulator.manipulateAsync(
+    uri,
+    [{ resize: { width: 1400 } }],
+    { compress: 0.78, format: ImageManipulator.SaveFormat.JPEG }
+  );
+  return compressed.uri;
+}
+
 /** 로컬 JPEG(file://)를 갤러리 스토리지에 올리고 public URL 반환 */
 export async function uploadGalleryJpegFromUri(
   deviceId: string,
   postId: string,
   fileUri: string
 ): Promise<string | null> {
-  const bytes = await readUriAsJpegBytes(fileUri);
+  const prepared = await compressGalleryImageUri(fileUri);
+  const bytes = await readUriAsJpegBytes(prepared);
   if (!bytes) return null;
 
   const fileName = `${deviceId}/${postId}.jpg`;
@@ -75,33 +102,12 @@ export async function uploadGalleryJpegFromUri(
   return data.publicUrl;
 }
 
+/** @deprecated 미리보기 없이 느리게 동작합니다. `pickGalleryImageUri` + `uploadGalleryJpegFromUri` 사용 권장 */
 export async function pickAndUploadImage(
   deviceId: string,
   postId: string
 ): Promise<string | null> {
-  const result = await ImagePicker.launchImageLibraryAsync({
-    mediaTypes: ['images'],
-    quality: 1,
-  });
-
-  if (result.canceled || !result.assets?.[0]) return null;
-
-  const compressed = await ImageManipulator.manipulateAsync(
-    result.assets[0].uri,
-    [{ resize: { width: 1200 } }],
-    { compress: 0.7, format: ImageManipulator.SaveFormat.JPEG }
-  );
-
-  const bytes = await readUriAsJpegBytes(compressed.uri);
-  if (!bytes) return null;
-
-  const fileName = `${deviceId}/${postId}.jpg`;
-  const { error } = await supabase.storage
-    .from('gallery')
-    .upload(fileName, bytes, { contentType: 'image/jpeg', upsert: true });
-
-  if (error) return null;
-
-  const { data } = supabase.storage.from('gallery').getPublicUrl(fileName);
-  return data.publicUrl;
+  const local = await pickGalleryImageUri();
+  if (!local) return null;
+  return uploadGalleryJpegFromUri(deviceId, postId, local);
 }

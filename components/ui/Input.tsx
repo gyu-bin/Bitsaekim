@@ -1,5 +1,6 @@
 import { StyleSheet, TextInput, type TextInputProps } from 'react-native';
 
+import { radius } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
@@ -13,7 +14,7 @@ export function Input(props: TextInputProps) {
         {
           color: c.text,
           borderColor: c.border,
-          backgroundColor: c.card,
+          backgroundColor: c.surface,
         },
       ]}
       {...props}
@@ -26,8 +27,9 @@ const styles = StyleSheet.create({
     ...typeface.sans,
     fontSize: fontSize.md,
     borderWidth: 1,
-    borderRadius: 12,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
+    borderRadius: radius.md,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    minHeight: 50,
   },
 });

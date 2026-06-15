@@ -20,6 +20,8 @@ interface UserStore {
   setGatheringOwner: (gatheringOwnerDeviceId: string | null) => void;
   clearGathering: () => void;
   setOnboarded: () => void;
+  /** 온보딩·모임 정보를 초기화합니다. deviceId는 유지합니다. */
+  logout: () => void;
 }
 
 export const useUserStore = create<UserStore>()(
@@ -60,6 +62,16 @@ export const useUserStore = create<UserStore>()(
           gatheringOwnerDeviceId: null,
         }),
       setOnboarded: () => set({ isOnboarded: true }),
+      logout: () =>
+        set({
+          name: null,
+          role: 'user',
+          isOnboarded: false,
+          gatheringId: null,
+          gatheringName: null,
+          gatheringInviteCode: null,
+          gatheringOwnerDeviceId: null,
+        }),
     }),
     { name: 'user-store', storage: createJSONStorage(() => AsyncStorage) }
   )

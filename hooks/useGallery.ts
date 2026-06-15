@@ -99,6 +99,7 @@ export function useGallery(worshipId?: string, mine?: boolean) {
     getNextPageParam: (lastPage, _all, lastPageParam) =>
       lastPage.length === PAGE ? lastPageParam + 1 : undefined,
     initialPageParam: 0,
+    staleTime: 60_000,
   });
 }
 

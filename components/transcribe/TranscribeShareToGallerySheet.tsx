@@ -20,6 +20,7 @@ import { Button } from '@/components/ui/Button';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { insertGalleryPostWithLocalImage, updateGalleryPostBody } from '@/lib/galleryInsert';
+import { refreshGalleryCache } from '@/lib/galleryQuery';
 import { useUserStore } from '@/stores/userStore';
 
 type Props = {
@@ -106,7 +107,7 @@ export function TranscribeShareToGallerySheet({
           return;
         }
       }
-      await qc.invalidateQueries({ queryKey: ['gallery'] });
+      await refreshGalleryCache(qc);
       await qc.invalidateQueries({ queryKey: ['transcription-stats'] });
       await deleteTemp(imageUri);
       onPosted();

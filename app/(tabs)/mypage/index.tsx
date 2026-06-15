@@ -18,22 +18,23 @@ import {
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { palette } from '@/constants/colors';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { palette, radius, shadow, spacing } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { useLeaderMyWorships } from '@/hooks/useLeaderMyWorships';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useTranscriptionStats } from '@/hooks/useTranscription';
 import { buildGatheringInviteUrl } from '@/lib/gatheringInviteLink';
+import { rememberRegisteredDeviceId } from '@/lib/device';
 import { supabase } from '@/lib/supabase';
 import { updateUserDisplayName } from '@/lib/userProfile';
-import { useThemeStore } from '@/stores/themeStore';
 import { useUserStore } from '@/stores/userStore';
 
 export default function MypageScreen() {
   const qc = useQueryClient();
-  const insets = useSafeAreaInsets();
+  const { horizontalGutter, insets } = useLayoutMetrics();
   const c = useThemeColors();
   const deviceId = useUserStore((s) => s.deviceId);
   const name = useUserStore((s) => s.name);
@@ -44,8 +45,7 @@ export default function MypageScreen() {
   const gatheringName = useUserStore((s) => s.gatheringName);
   const gatheringInviteCode = useUserStore((s) => s.gatheringInviteCode);
   const gatheringOwnerDeviceId = useUserStore((s) => s.gatheringOwnerDeviceId);
-  const toggleDark = useThemeStore((s) => s.toggle);
-  const isDark = useThemeStore((s) => s.isDark);
+  const logout = useUserStore((s) => s.logout);
   const { data: stats } = useTranscriptionStats();
   const { data: myWorships, isLoading: myWorshipsLoading } = useLeaderMyWorships(
     deviceId ?? null,
@@ -124,6 +124,25 @@ export default function MypageScreen() {
     }
   }, [gatheringInviteCode]);
 
+  const confirmLogout = () => {
+    Alert.alert(
+      '로그아웃',
+      '이 기기에서 이름·모임 정보를 지웁니다. 같은 기기라면 시작 화면에서 「이어서 시작하기」로 다시 들어올 수 있어요.',
+      [
+      { text: '취소', style: 'cancel' },
+      {
+        text: '로그아웃',
+        style: 'destructive',
+        onPress: async () => {
+          if (deviceId) await rememberRegisteredDeviceId(deviceId);
+          logout();
+          qc.clear();
+          router.replace('/onboarding');
+        },
+      },
+    ]);
+  };
+
   const leaveLeader = () => {
     Alert.alert('인도자 해제', '일반 참여자 모드로 돌아갈까요?', [
       { text: '취소', style: 'cancel' },
@@ -148,17 +167,19 @@ export default function MypageScreen() {
   return (
     <ScrollView
       style={[styles.root, { backgroundColor: c.background }]}
-      contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
+      contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
     >
-      <View style={[styles.hero, { backgroundColor: '#141008' }]}>
-        <TouchableOpacity
-          style={styles.themeBtn}
-          onPress={toggleDark}
-          accessibilityLabel="다크 모드"
-        >
-          <Feather name={isDark ? 'sun' : 'moon'} size={22} color="#f0ece4" />
-        </TouchableOpacity>
-        <View style={styles.heroProfile}>
+      <View style={[styles.profileSection, { paddingTop: insets.top + spacing.sm, paddingHorizontal: horizontalGutter }]}>
+        <ScreenHeader
+          title="마이"
+          subtitle={gatheringName ?? '모임에 참여해 주세요'}
+          showThemeToggle
+          large={false}
+        />
+        <View style={[styles.profileCard, shadow.sm, { backgroundColor: c.card, borderColor: c.border }]}>
+          <View style={[styles.avatar, { backgroundColor: c.accent }]}>
+            <Text style={[styles.avatarText, { color: c.onAccent }]}>{initial}</Text>
+          </View>
           <TouchableOpacity
             style={styles.nameEditRow}
             onPress={() => {
@@ -169,17 +190,17 @@ export default function MypageScreen() {
             accessibilityRole="button"
             accessibilityLabel="이름 편집"
           >
-            <Text style={styles.name}>{name ?? '이름 없음'}</Text>
-            <Feather name="edit-2" size={16} color="rgba(240,236,228,0.55)" style={{ marginLeft: 8 }} />
+            <Text style={[styles.name, { color: c.text }]}>{name ?? '이름 없음'}</Text>
+            <Feather name="edit-2" size={16} color={c.textSub} style={{ marginLeft: 8 }} />
           </TouchableOpacity>
           {role === 'leader' ? (
             <View
-              style={styles.leaderBadge}
+              style={[styles.leaderBadge, { backgroundColor: c.accentMuted }]}
               accessibilityRole="text"
               accessibilityLabel="인도자 권한으로 사용 중"
             >
-              <Feather name="award" size={13} color={palette.gold} />
-              <Text style={styles.leaderBadgeText}>인도자</Text>
+              <Feather name="award" size={13} color={c.accent} />
+              <Text style={[styles.leaderBadgeText, { color: c.accentDark }]}>인도자</Text>
             </View>
           ) : null}
         </View>
@@ -196,7 +217,7 @@ export default function MypageScreen() {
           style={styles.nameModalOverlay}
         >
           <Pressable style={styles.nameModalBackdrop} onPress={() => !savingName && setNameEditOpen(false)} />
-          <View style={[styles.nameModalCard, { backgroundColor: c.card, borderColor: c.border }]}>
+          <View style={[styles.nameModalCard, shadow.md, { backgroundColor: c.card, borderColor: c.border }]}>
             <Text style={[styles.nameModalTitle, { color: c.text }]}>표시 이름</Text>
             <TextInput
               value={nameDraft}
@@ -224,7 +245,7 @@ export default function MypageScreen() {
                 onPress={saveDisplayName}
                 disabled={savingName}
               >
-                <Text style={{ color: '#1a160e', ...typeface.sansMedium }}>{savingName ? '저장 중…' : '저장'}</Text>
+                <Text style={{ color: c.onAccent, ...typeface.sansMedium }}>{savingName ? '저장 중…' : '저장'}</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -232,7 +253,7 @@ export default function MypageScreen() {
       </Modal>
 
       {gatheringId && gatheringName ? (
-        <View style={[styles.gatheringCard, { backgroundColor: c.card, borderColor: c.border }]}>
+        <View style={[styles.gatheringCard, shadow.sm, { backgroundColor: c.card, borderColor: c.border, marginHorizontal: horizontalGutter }]}>
           <Text style={[styles.gatheringLabel, { color: c.textSub }]}>내 모임</Text>
           <Text style={[styles.gatheringName, { color: c.text }]} numberOfLines={2}>
             {gatheringName}
@@ -274,7 +295,7 @@ export default function MypageScreen() {
 
       {role === 'leader' && !gatheringId ? (
         <TouchableOpacity
-          style={[styles.createGatheringRow, { borderColor: c.accent, backgroundColor: c.card }]}
+          style={[styles.createGatheringRow, shadow.sm, { borderColor: c.accent, backgroundColor: c.card }]}
           onPress={() => router.push('/leader/gathering/create' as Href)}
           accessibilityRole="button"
         >
@@ -285,7 +306,7 @@ export default function MypageScreen() {
 
       <View style={styles.statsRow}>
         <TouchableOpacity
-          style={[styles.stat, { backgroundColor: c.card, borderColor: c.border }]}
+          style={[styles.stat, shadow.sm, { backgroundColor: c.card, borderColor: c.border }]}
           onPress={() => router.push('/(tabs)/mypage/transcriptions')}
           activeOpacity={0.75}
           accessibilityRole="button"
@@ -295,23 +316,23 @@ export default function MypageScreen() {
           <Text style={[styles.statL, { color: c.textSub }]}>필사 곡</Text>
           <Text style={[styles.statTap, { color: c.accent }]}>목록 보기</Text>
         </TouchableOpacity>
-        <View style={[styles.stat, { backgroundColor: c.card, borderColor: c.border }]}>
+        <View style={[styles.stat, shadow.sm, { backgroundColor: c.card, borderColor: c.border }]}>
           <Text style={[styles.statN, { color: c.accent }]}>{stats?.worships ?? 0}</Text>
           <Text style={[styles.statL, { color: c.textSub }]}>예배</Text>
         </View>
-        <View style={[styles.stat, { backgroundColor: c.card, borderColor: c.border }]}>
+        <View style={[styles.stat, shadow.sm, { backgroundColor: c.card, borderColor: c.border }]}>
           <Text style={[styles.statN, { color: c.accent }]}>{stats?.uploads ?? 0}</Text>
           <Text style={[styles.statL, { color: c.textSub }]}>업로드</Text>
         </View>
       </View>
 
-      <View style={[styles.streak, { backgroundColor: palette.gold }]}>
+      <View style={[styles.streak, shadow.md, { backgroundColor: palette.gold }]}>
         <Text style={styles.streakTitle}>🔥 연속 필사</Text>
         <Text style={styles.streakSub}>곧 기록됩니다</Text>
       </View>
 
       <TouchableOpacity
-        style={[styles.linkRow, { borderColor: c.border, backgroundColor: c.card }]}
+        style={[styles.linkRow, shadow.sm, { borderColor: c.border, backgroundColor: c.card }]}
         onPress={() =>
           router.push({ pathname: '/(tabs)/gallery', params: { filter: 'mine' } })
         }
@@ -322,7 +343,7 @@ export default function MypageScreen() {
       </TouchableOpacity>
 
       {role === 'user' ? (
-        <TouchableOpacity style={[styles.leaderCard, { borderColor: c.border }]} onPress={becomeLeader}>
+        <TouchableOpacity style={[styles.leaderCard, shadow.sm, { borderColor: c.border, backgroundColor: c.card }]} onPress={becomeLeader}>
           <Text style={[styles.leaderTitle, { color: c.text }]}>👑 인도자로 전환</Text>
           <Text style={[styles.leaderSub, { color: c.textSub }]}>
             예배·찬양 만들기는 마이페이지에서만 할 수 있어요. 눌러 활성화합니다.
@@ -330,7 +351,7 @@ export default function MypageScreen() {
         </TouchableOpacity>
       ) : (
         <View style={styles.leaderMenu}>
-          <View style={[styles.leaderMenuPanel, { borderColor: c.border, backgroundColor: c.card }]}>
+          <View style={[styles.leaderMenuPanel, shadow.sm, { borderColor: c.border, backgroundColor: c.card }]}>
             <Text style={[styles.leaderPanelTitle, { color: c.text }]}>인도자 도구</Text>
             <Text style={[styles.leaderPanelSub, { color: c.textSub }]}>
               예배·찬양을 만들고, 내가 올린 예배의 정보와 콘티를 다룹니다.
@@ -429,7 +450,7 @@ export default function MypageScreen() {
               return (
                 <View
                   key={w.id}
-                  style={[styles.myWorshipCard, { backgroundColor: c.card, borderColor: c.border }]}
+                  style={[styles.myWorshipCard, shadow.sm, { backgroundColor: c.card, borderColor: c.border }]}
                 >
                   <Text style={[styles.myWorshipDate, { color: c.textSub }]}>{dateLabel}</Text>
                   <Text style={[styles.myWorshipName, { color: c.text }]} numberOfLines={2}>
@@ -466,20 +487,34 @@ export default function MypageScreen() {
           </TouchableOpacity>
         </View>
       )}
+
+      <TouchableOpacity
+        style={[styles.logoutRow, { borderColor: c.border, backgroundColor: c.card }]}
+        onPress={confirmLogout}
+        activeOpacity={0.75}
+        accessibilityRole="button"
+        accessibilityLabel="로그아웃"
+      >
+        <Feather name="log-out" size={18} color={c.textSub} />
+        <Text style={[styles.logoutText, { color: c.textSub }]}>로그아웃</Text>
+      </TouchableOpacity>
     </ScrollView>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  hero: {
-    paddingTop: 56,
-    paddingBottom: 28,
-    alignItems: 'center',
-    position: 'relative',
+  profileSection: {
+    marginBottom: spacing.md,
   },
-  themeBtn: { position: 'absolute', top: 16, right: 20, padding: 8 },
-  heroProfile: { alignItems: 'center', marginTop: 8 },
+  profileCard: {
+    alignItems: 'center',
+    paddingVertical: spacing.xl,
+    paddingHorizontal: spacing.lg,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginTop: spacing.sm,
+  },
   leaderBadge: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -487,27 +522,22 @@ const styles = StyleSheet.create({
     marginTop: 10,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(212, 169, 106, 0.55)',
-    backgroundColor: 'rgba(212, 169, 106, 0.12)',
+    borderRadius: radius.full,
   },
   leaderBadgeText: {
     ...typeface.sansMedium,
     fontSize: fontSize.sm,
-    color: palette.goldLight,
   },
   avatar: {
     width: 72,
     height: 72,
     borderRadius: 36,
-    backgroundColor: palette.gold,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 12,
   },
-  avatarText: { ...typeface.serifBold, fontSize: 28, color: '#1a160e' },
+  avatarText: { ...typeface.sansMedium, fontSize: 28 },
   nameEditRow: {
-    marginTop: 4,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
@@ -515,9 +545,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
   },
   name: {
-    ...typeface.serifBold,
+    ...typeface.sansMedium,
     fontSize: fontSize.xl,
-    color: '#f0ece4',
   },
   nameModalOverlay: { flex: 1, justifyContent: 'center', paddingHorizontal: 24 },
   nameModalBackdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.45)' },
@@ -545,11 +574,10 @@ const styles = StyleSheet.create({
   nameModalBtnPrimary: { paddingVertical: 10, paddingHorizontal: 18, borderRadius: 10 },
   deviceId: { ...typeface.mono, fontSize: fontSize.xs, color: 'rgba(240,236,228,0.5)', marginTop: 6 },
   gatheringCard: {
-    marginHorizontal: 16,
-    marginTop: 12,
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+    marginTop: 0,
+    padding: 18,
+    borderRadius: radius.xl,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   gatheringLabel: { ...typeface.sans, fontSize: fontSize.xs, marginBottom: 4 },
   gatheringName: { ...typeface.sansMedium, fontSize: fontSize.md, lineHeight: 22 },
@@ -587,9 +615,9 @@ const styles = StyleSheet.create({
   statsRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 12 },
   stat: {
     flex: 1,
-    borderRadius: 12,
-    borderWidth: 1,
-    paddingVertical: 14,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    paddingVertical: 16,
     alignItems: 'center',
   },
   statN: { ...typeface.serifBold, fontSize: fontSize.xl },
@@ -697,4 +725,17 @@ const styles = StyleSheet.create({
   },
   myWorshipBtnLabel: { ...typeface.sans, fontSize: fontSize.xs, marginBottom: 2 },
   myWorshipBtnText: { ...typeface.sansMedium, fontSize: fontSize.sm },
+  logoutRow: {
+    marginHorizontal: 16,
+    marginTop: 28,
+    marginBottom: 8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 14,
+    borderRadius: 12,
+    borderWidth: 1,
+  },
+  logoutText: { ...typeface.sansMedium, fontSize: fontSize.sm },
 });

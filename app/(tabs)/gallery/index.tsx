@@ -1,32 +1,38 @@
 import { Feather } from '@expo/vector-icons';
-import { useBottomTabBarHeight } from '@react-navigation/bottom-tabs';
-import { router, useLocalSearchParams } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   FlatList,
   RefreshControl,
   StyleSheet,
-  Text,
   TouchableOpacity,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { GalleryCreateSheet } from '@/components/gallery/GalleryCreateSheet';
 import type { GalleryFilter } from '@/components/gallery/FilterChips';
 import { FilterChips } from '@/components/gallery/FilterChips';
 import { PostCard } from '@/components/gallery/PostCard';
-import { fontSize, typeface } from '@/constants/fonts';
+import { EmptyState } from '@/components/ui/EmptyState';
+import { ScreenHeader } from '@/components/ui/ScreenHeader';
+import { shadow, spacing } from '@/constants/colors';
 import { useGallery } from '@/hooks/useGallery';
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useWorships } from '@/hooks/useWorships';
+import { isSupabaseConfigured, supabaseMissingConfigUserMessage } from '@/lib/supabase';
 
 export default function GalleryScreen() {
-  const insets = useSafeAreaInsets();
-  const tabBarHeight = useBottomTabBarHeight();
+  const { contentWidth, horizontalGutter, isWide, listBottomPadding, insets } = useLayoutMetrics();
   const c = useThemeColors();
-  const { data: worships, refetch: refetchWorships, isRefetching: worshipRefetching } = useWorships();
+  const numColumns = isWide ? 3 : 2;
+  const gridGap = spacing.md;
+  const cellWidth = useMemo(() => {
+    const gaps = gridGap * (numColumns - 1);
+    return Math.floor((contentWidth - gaps) / numColumns);
+  }, [contentWidth, gridGap, numColumns]);
+  const { data: worships, refetch: refetchWorships } = useWorships();
   const { filter: filterParam } = useLocalSearchParams<{ filter?: string }>();
   const [filter, setFilter] = useState<GalleryFilter>('all');
 
@@ -41,6 +47,7 @@ export default function GalleryScreen() {
   const posts = useMemo(() => q.data?.pages.flat() ?? [], [q.data?.pages]);
 
   const [manualRefresh, setManualRefresh] = useState(false);
+  const [createOpen, setCreateOpen] = useState(false);
   const onRefresh = useCallback(async () => {
     setManualRefresh(true);
     try {
@@ -48,34 +55,46 @@ export default function GalleryScreen() {
     } finally {
       setManualRefresh(false);
     }
-  }, [q, refetchWorships]);
+  }, [q.refetch, refetchWorships]);
 
-  const listPadBottom = tabBarHeight + Math.max(insets.bottom, 12) + 8;
-  const galleryRefreshing = manualRefresh || q.isRefetching || worshipRefetching;
+  const listPadBottom = listBottomPadding;
+  const galleryRefreshing = manualRefresh;
+  const showInitialLoader = isSupabaseConfigured() && q.isLoading && posts.length === 0;
 
   const listHeader = useMemo(
     () => (
-      <View style={styles.listHeader}>
-        <View style={styles.headerBlock}>
-          <Text style={[styles.title, { color: c.text }]}>나눔</Text>
-          <Text style={[styles.subtitle, { color: c.textSub }]}>
-            필사·사진뿐 아니라 찬양 링크·가사·묵상도 나눌 수 있어요
-          </Text>
-          <Text style={[styles.pullHint, { color: c.textSub }]}>아래로 당겨 새 글과 예배 목록을 새로고침</Text>
-        </View>
-        <FilterChips worships={worships ?? []} active={filter} onChange={setFilter} />
+      <View style={[styles.listHeader, { paddingHorizontal: horizontalGutter }]}>
+        <ScreenHeader
+          title="나눔"
+          subtitle="필사·사진, 찬양과 묵상을 함께 나눠요"
+        />
+        <FilterChips
+          worships={worships ?? []}
+          active={filter}
+          onChange={setFilter}
+          horizontalPadding={horizontalGutter}
+        />
       </View>
     ),
-    [c.text, c.textSub, worships, filter]
+    [worships, filter, horizontalGutter]
   );
 
   return (
     <View style={[styles.root, { backgroundColor: c.background, paddingTop: insets.top }]}>
       <FlatList
+        key={`gallery-cols-${numColumns}`}
         data={posts}
         keyExtractor={(item) => item.id}
-        numColumns={2}
-        columnWrapperStyle={styles.row}
+        numColumns={numColumns}
+        columnWrapperStyle={
+          numColumns > 1
+            ? {
+                paddingHorizontal: horizontalGutter,
+                gap: gridGap,
+                marginBottom: gridGap,
+              }
+            : undefined
+        }
         removeClippedSubviews={false}
         windowSize={9}
         initialNumToRender={8}
@@ -94,10 +113,26 @@ export default function GalleryScreen() {
         onEndReached={() => q.fetchNextPage()}
         onEndReachedThreshold={0.4}
         ListEmptyComponent={
-          q.isLoading ? (
+          !isSupabaseConfigured() ? (
+            <EmptyState
+              icon="alert-circle"
+              title="서버 연결 설정이 필요해요"
+              description={supabaseMissingConfigUserMessage()}
+            />
+          ) : showInitialLoader ? (
             <ActivityIndicator color={c.accent} style={styles.loader} />
+          ) : q.isError ? (
+            <EmptyState
+              icon="alert-circle"
+              title="목록을 불러오지 못했어요"
+              description="아래로 당겨 다시 시도해 주세요."
+            />
           ) : (
-            <Text style={[styles.empty, { color: c.textSub }]}>아직 게시물이 없습니다</Text>
+            <EmptyState
+              icon="image"
+              title="아직 게시물이 없어요"
+              description="오른쪽 아래 + 버튼으로 필사 캡처나 찬양·묵상을 나눠 보세요."
+            />
           )
         }
         ListFooterComponent={
@@ -106,82 +141,40 @@ export default function GalleryScreen() {
           ) : null
         }
         renderItem={({ item }) => (
-          <View style={styles.cell}>
-            <PostCard post={item} />
+          <View style={{ width: cellWidth, marginBottom: gridGap }}>
+            <PostCard post={item} thumbWidth={cellWidth} />
           </View>
         )}
       />
-      <View style={[styles.fabWrap, { bottom: listPadBottom + 4 }]} pointerEvents="box-none">
+      <View style={[styles.fabWrap, { bottom: listPadBottom + 4, right: horizontalGutter }]} pointerEvents="box-none">
         <TouchableOpacity
-          style={[styles.fab, { backgroundColor: c.accent }]}
-          onPress={() =>
-            Alert.alert('나눔 올리기', '어떤 형태로 올릴까요?', [
-              {
-                text: '사진·필사 캡처',
-                onPress: () => router.push('/(tabs)/gallery/compose'),
-              },
-              {
-                text: '찬양·링크·가사·묵상',
-                onPress: () => router.push('/(tabs)/gallery/share-chant'),
-              },
-              { text: '취소', style: 'cancel' },
-            ])
-          }
+          style={[styles.fab, shadow.accent, { backgroundColor: c.accent }]}
+          onPress={() => setCreateOpen(true)}
           accessibilityRole="button"
           accessibilityLabel="나눔 글 올리기"
         >
-          <Feather name="plus" size={26} color="#fff" />
+          <Feather name="plus" size={26} color={c.onAccent} />
         </TouchableOpacity>
       </View>
+      <GalleryCreateSheet visible={createOpen} onClose={() => setCreateOpen(false)} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  listHeader: { paddingBottom: 10 },
-  headerBlock: {
-    paddingHorizontal: 20,
-    paddingTop: 6,
-    paddingBottom: 4,
-  },
-  title: {
-    ...typeface.serifBold,
-    fontSize: fontSize['2xl'],
-  },
-  subtitle: {
-    ...typeface.sans,
-    fontSize: fontSize.sm,
-    marginTop: 2,
-    lineHeight: 18,
-  },
-  pullHint: { ...typeface.sans, fontSize: fontSize.xs, marginTop: 8, lineHeight: 16 },
-  row: {
-    justifyContent: 'space-between',
-    paddingHorizontal: 14,
-    gap: 12,
-    marginBottom: 2,
-  },
+  listHeader: { paddingBottom: 4 },
   listContent: { paddingTop: 4 },
-  cell: { flex: 1, maxWidth: '50%', paddingHorizontal: 4 },
   loader: { marginTop: 16, marginBottom: 8 },
-  empty: { textAlign: 'center', marginTop: 12, ...typeface.sans, fontSize: fontSize.sm },
   fabWrap: {
     position: 'absolute',
-    right: 16,
-    left: undefined,
     alignItems: 'flex-end',
   },
   fab: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
   },
 });

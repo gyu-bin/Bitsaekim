@@ -1,39 +1,36 @@
 import { Feather } from '@expo/vector-icons';
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
+import { radius, shadow } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { WorshipService } from '@/types';
 
-function formatServiceDate(d: string) {
-  const [y, m, day] = d.split('-');
-  return `${y}.${m}.${day}`;
-}
-
 type Props = {
   worship: WorshipService;
-  transcriptionCount: number;
   onPress: () => void;
 };
 
-export function TranscribeWorshipPickRow({ worship, transcriptionCount, onPress }: Props) {
+export function TranscribeWorshipPickRow({ worship, onPress }: Props) {
   const c = useThemeColors();
-  const n = transcriptionCount;
 
   return (
     <TouchableOpacity
-      style={[styles.row, { backgroundColor: c.card, borderColor: c.border }]}
+      style={[styles.row, shadow.sm, { backgroundColor: c.card, borderColor: c.border }]}
       onPress={onPress}
-      activeOpacity={0.75}
+      activeOpacity={0.82}
       accessibilityRole="button"
-      accessibilityLabel={`${worship.name} 예배, 필사 ${n}곡`}
+      accessibilityLabel={`${worship.name} 예배`}
     >
+      <View style={[styles.accentBar, { backgroundColor: c.accent }]} />
       <View style={styles.body}>
         <Text style={[styles.title, { color: c.text }]} numberOfLines={2}>
           {worship.name}
         </Text>
       </View>
-      <Feather name="chevron-right" size={22} color={c.textSub} />
+      <View style={[styles.chevronWrap, { backgroundColor: c.accentMuted }]}>
+        <Feather name="chevron-right" size={18} color={c.accent} />
+      </View>
     </TouchableOpacity>
   );
 }
@@ -43,13 +40,27 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 12,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
-    borderRadius: 14,
-    borderWidth: 1,
-    marginBottom: 10,
+    paddingVertical: 16,
+    paddingRight: 14,
+    paddingLeft: 0,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    marginBottom: 12,
+    overflow: 'hidden',
   },
-  body: { flex: 1, minWidth: 0 },
-  title: { ...typeface.serifBold, fontSize: fontSize.md, lineHeight: 22 },
-  meta: { ...typeface.sans, fontSize: fontSize.xs, marginTop: 6 },
+  accentBar: {
+    width: 4,
+    alignSelf: 'stretch',
+    borderTopLeftRadius: radius.lg,
+    borderBottomLeftRadius: radius.lg,
+  },
+  body: { flex: 1, minWidth: 0, paddingLeft: 12 },
+  title: { ...typeface.serifBold, fontSize: fontSize.md, lineHeight: 24 },
+  chevronWrap: {
+    width: 32,
+    height: 32,
+    borderRadius: radius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

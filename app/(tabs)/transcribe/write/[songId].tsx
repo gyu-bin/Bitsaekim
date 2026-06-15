@@ -19,6 +19,7 @@ import { fontSize, typeface } from '@/constants/fonts';
 import { useRecordTranscription } from '@/hooks/useTranscription';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { insertGalleryPostWithLocalImage } from '@/lib/galleryInsert';
+import { refreshGalleryCache } from '@/lib/galleryQuery';
 import { persistPreviewAfterTranscriptionComplete } from '@/lib/transcriptionLocalPreview';
 import { supabase } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
@@ -304,7 +305,7 @@ export default function WriteSongScreen() {
         });
         if (autoRes.ok) {
           autoPostedId = autoRes.postId;
-          await qc.invalidateQueries({ queryKey: ['gallery'] });
+          await refreshGalleryCache(qc);
           await qc.invalidateQueries({ queryKey: ['transcription-stats'] });
           await qc.invalidateQueries({ queryKey: ['gallery-mine-for-song', deviceId, worshipId, songId] });
         }

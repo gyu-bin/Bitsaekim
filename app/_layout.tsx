@@ -1,3 +1,6 @@
+import 'react-native-get-random-values';
+import 'react-native-url-polyfill/auto';
+
 import { DMMono_400Regular } from '@expo-google-fonts/dm-mono';
 import {
   NotoSansKR_400Regular,
