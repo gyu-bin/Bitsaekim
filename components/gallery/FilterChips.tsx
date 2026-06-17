@@ -3,9 +3,10 @@ import { ScrollView, StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { radius } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
+import type { GalleryFilter } from '@/lib/galleryFilter';
 import type { WorshipService } from '@/types';
 
-export type GalleryFilter = 'all' | 'mine' | string;
+export type { GalleryFilter };
 
 type Props = {
   worships: WorshipService[];
@@ -53,6 +54,8 @@ export function FilterChips({ worships, active, onChange, horizontalPadding = 20
       contentContainerStyle={[styles.row, { paddingHorizontal: horizontalPadding }]}
     >
       <Chip id="all" label="전체" />
+      <Chip id="week" label="이번 주" />
+      <Chip id="month" label="이번 달" />
       {worships.map((w) => (
         <Chip key={w.id} id={w.id} label={w.name} />
       ))}

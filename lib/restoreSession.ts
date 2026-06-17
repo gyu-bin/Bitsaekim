@@ -2,6 +2,7 @@ import {
   getDeviceIdCandidates,
   rememberRegisteredDeviceId,
 } from '@/lib/device';
+import { fetchRecoveryCodeForDevice } from '@/lib/recoveryCode';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { raceOrTimeout } from '@/lib/withTimeout';
 import { useUserStore } from '@/stores/userStore';
@@ -138,4 +139,6 @@ export async function applyRestoredSession(session: RestoredSession) {
     store.clearGathering();
   }
   store.setOnboarded();
+  const code = await fetchRecoveryCodeForDevice(session.deviceId);
+  if (code) store.setRecoveryCode(code);
 }

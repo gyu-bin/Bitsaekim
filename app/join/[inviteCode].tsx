@@ -5,7 +5,9 @@ import { ActivityIndicator, Alert, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { fontSize, typeface } from '@/constants/fonts';
+import { isInvalidInviteCodeError } from '@/lib/joinGathering';
 import { isSupabaseConfigured, supabase, supabaseMissingConfigUserMessage } from '@/lib/supabase';
+import { showToast } from '@/stores/toastStore';
 import { useUserStore } from '@/stores/userStore';
 
 type RpcJoinRow = {
@@ -116,6 +118,9 @@ export default function JoinInviteDeepLinkScreen() {
           e && typeof e === 'object' && 'message' in e && typeof e.message === 'string'
             ? e.message
             : '모임에 들어가지 못했습니다.';
+        if (isInvalidInviteCodeError(e as { message?: string })) {
+          showToast(msg, 'error');
+        }
         setStatus('error');
         setMessage(msg);
       }

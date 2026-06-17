@@ -15,7 +15,9 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/Button';
 import { palette, radius } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
+import { isInvalidInviteCodeError } from '@/lib/joinGathering';
 import { isSupabaseConfigured, supabase, supabaseMissingConfigUserMessage } from '@/lib/supabase';
+import { showToast } from '@/stores/toastStore';
 import { useUserStore } from '@/stores/userStore';
 
 type RpcJoinRow = {
@@ -65,7 +67,11 @@ export default function JoinGatheringScreen() {
         p_invite_code: trimmed,
       });
       if (error) {
-        Alert.alert('오류', error.message ?? '코드를 확인할 수 없습니다.');
+        if (isInvalidInviteCodeError(error)) {
+          showToast(error.message ?? '초대 코드가 유효하지 않아요', 'error');
+        } else {
+          Alert.alert('오류', error.message ?? '코드를 확인할 수 없습니다.');
+        }
         return;
       }
       const row = firstRow<RpcJoinRow>(data);

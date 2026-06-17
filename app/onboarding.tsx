@@ -17,11 +17,15 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { Button } from '@/components/ui/Button';
+import { OnboardingIntroSlides } from '@/components/onboarding/OnboardingIntroSlides';
 import { WebNativeTextInput } from '@/components/ui/WebNativeTextInput';
 import { palette, radius } from '@/constants/colors';
 import { typeface } from '@/constants/fonts';
 import { getDeviceId, rememberRegisteredDeviceId } from '@/lib/device';
 import { buildGatheringInviteUrl } from '@/lib/gatheringInviteLink';
+import { hasSeenOnboardingIntro, markOnboardingIntroSeen } from '@/lib/onboardingIntro';
+import { applyRecoveryCodeSession } from '@/lib/recoveryCode';
+import { isInvalidInviteCodeError } from '@/lib/joinGathering';
 import { registerUserForDevice } from '@/lib/registerUser';
 import {
   applyRestoredSession,
@@ -35,8 +39,9 @@ import {
   supabaseMissingConfigUserMessage,
 } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
+import { showToast } from '@/stores/toastStore';
 
-type Flow = 'join' | 'create';
+type Flow = 'join' | 'create' | 'recover';
 
 type RpcJoinRow = {
   gathering_id: string;
@@ -60,6 +65,7 @@ export default function OnboardingScreen() {
   const prevHasRef = useRef(false);
   const [flow, setFlow] = useState<Flow>('join');
   const [inviteCode, setInviteCode] = useState('');
+  const [recoveryCode, setRecoveryCode] = useState('');
   const [canStart, setCanStart] = useState(false);
   const [busy, setBusy] = useState(false);
   const [existingSession, setExistingSession] = useState<RestoredSession | null>(null);
@@ -68,6 +74,7 @@ export default function OnboardingScreen() {
   const sessionProbeRef = useRef(0);
   const initialProbeDone = useRef(false);
   const [storeHydrated, setStoreHydrated] = useState(() => useUserStore.persist.hasHydrated());
+  const [introPhase, setIntroPhase] = useState<'loading' | 'slides' | 'form'>('loading');
   const insets = useSafeAreaInsets();
 
   useEffect(() => {
@@ -112,6 +119,13 @@ export default function OnboardingScreen() {
   }, [loadExistingSession]);
 
   const syncCanStart = useCallback(() => {
+    if (flow === 'recover') {
+      const ok = recoveryCode.trim().length === 6;
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => setCanStart(ok));
+      });
+      return;
+    }
     const hasName = nameRef.current.trim().length > 0;
     const extra =
       flow === 'join'
@@ -120,7 +134,7 @@ export default function OnboardingScreen() {
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setCanStart(hasName && extra));
     });
-  }, [flow, inviteCode]);
+  }, [flow, inviteCode, recoveryCode]);
 
   const onGatheringNameChange = useCallback(
     (text: string) => {
@@ -144,7 +158,7 @@ export default function OnboardingScreen() {
 
   useEffect(() => {
     syncCanStart();
-  }, [flow, inviteCode, syncCanStart]);
+  }, [flow, inviteCode, recoveryCode, syncCanStart]);
 
   useEffect(() => {
     gatheringNameRef.current = '';
@@ -158,6 +172,24 @@ export default function OnboardingScreen() {
       setFlow('join');
     }
   }, [inviteParam]);
+
+  useEffect(() => {
+    void (async () => {
+      const raw = typeof inviteParam === 'string' ? inviteParam : Array.isArray(inviteParam) ? inviteParam[0] : '';
+      const hasInvite = !!raw?.trim();
+      if (hasInvite) {
+        setIntroPhase('form');
+        return;
+      }
+      const seen = await hasSeenOnboardingIntro();
+      setIntroPhase(seen ? 'form' : 'slides');
+    })();
+  }, [inviteParam]);
+
+  const finishIntro = useCallback(async () => {
+    await markOnboardingIntroSeen();
+    setIntroPhase('form');
+  }, []);
 
   useEffect(() => {
     if (!storeHydrated || initialProbeDone.current) return;
@@ -177,6 +209,35 @@ export default function OnboardingScreen() {
       }
     } catch (e) {
       Alert.alert('오류', formatSupabaseNetworkError(e));
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleRecover = async () => {
+    const code = recoveryCode.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+    if (code.length !== 6) return;
+    if (!isSupabaseConfigured()) {
+      Alert.alert('설정 필요', supabaseMissingConfigUserMessage());
+      return;
+    }
+    setBusy(true);
+    try {
+      const deviceId = await getDeviceId();
+      const result = await applyRecoveryCodeSession(code, deviceId);
+      if (!result.success) {
+        showToast(result.error || '코드를 다시 확인해 주세요', 'error');
+        return;
+      }
+      await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+      const gatheringId = useUserStore.getState().gatheringId;
+      if (gatheringId) {
+        router.replace('/(tabs)/transcribe');
+      } else {
+        router.replace('/join-gathering');
+      }
+    } catch {
+      showToast('코드를 다시 확인해 주세요', 'error');
     } finally {
       setBusy(false);
     }
@@ -257,13 +318,29 @@ export default function OnboardingScreen() {
         ]);
       }
     } catch (e) {
-      Alert.alert('오류', formatSupabaseNetworkError(e));
+      if (flow === 'join' && isInvalidInviteCodeError(e as { message?: string })) {
+        showToast((e as { message?: string }).message ?? '초대 코드가 유효하지 않아요', 'error');
+      } else {
+        Alert.alert('오류', formatSupabaseNetworkError(e));
+      }
     } finally {
       setBusy(false);
     }
   };
 
   const insetPad = { paddingTop: insets.top, paddingBottom: insets.bottom };
+
+  if (introPhase === 'loading') {
+    return (
+      <View style={[styles.root, insetPad, styles.introLoading]}>
+        <ActivityIndicator size="large" color={palette.gold} />
+      </View>
+    );
+  }
+
+  if (introPhase === 'slides') {
+    return <OnboardingIntroSlides onDone={() => void finishIntro()} onSkip={() => void finishIntro()} />;
+  }
 
   const flowToggle = (
     <View style={styles.flowRow}>
@@ -279,6 +356,14 @@ export default function OnboardingScreen() {
       >
         <Text style={[styles.flowChipText, flow === 'create' && styles.flowChipTextOn]}>
           인도자 — 모임 열기
+        </Text>
+      </Pressable>
+      <Pressable
+        onPress={() => setFlow('recover')}
+        style={[styles.flowChip, flow === 'recover' && styles.flowChipOn]}
+      >
+        <Text style={[styles.flowChipText, flow === 'recover' && styles.flowChipTextOn]}>
+          다른 기기에서 이어하기
         </Text>
       </Pressable>
     </View>
@@ -318,8 +403,8 @@ export default function OnboardingScreen() {
           <Text style={styles.returningTitle}>다시 오셨나요?</Text>
           <Text style={styles.returningBody}>
             이 기기에는 자동으로 불러올 정보가 없어요.{'\n'}
-            <Text style={styles.returningEm}>아래 이름·초대 코드</Text>를 입력하면 같은 모임에 다시 들어갈 수
-            있습니다. (새 계정을 만드는 것이 아니에요.)
+            <Text style={styles.returningEm}>복구 코드</Text>가 있다면 「다른 기기에서 이어하기」를 선택하세요.
+            없다면 아래에서 이름·초대 코드를 입력해 같은 모임에 다시 들어갈 수 있습니다.
           </Text>
           <Pressable
             style={styles.existingRetry}
@@ -333,6 +418,36 @@ export default function OnboardingScreen() {
 
       {flowToggle}
 
+      {flow === 'recover' ? (
+        <>
+          <Text style={styles.fieldLabel}>복구 코드 (6자리)</Text>
+          <TextInput
+            accessibilityLabel="복구 코드 입력"
+            placeholder="예: A1B2C3"
+            placeholderTextColor="rgba(255,255,255,0.45)"
+            value={recoveryCode}
+            onChangeText={(t) =>
+              setRecoveryCode(t.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6))
+            }
+            style={styles.input}
+            autoCapitalize="characters"
+            autoCorrect={false}
+            maxLength={6}
+          />
+          <Text style={styles.hint}>
+            이전 기기의 <Text style={styles.hintEm}>마이페이지</Text>에서 발급한 복구 코드를 입력하세요. 앱을
+            재설치하거나 기기를 바꿀 때 사용해요.
+          </Text>
+          <Button
+            title="복구하고 시작"
+            onPress={() => void handleRecover()}
+            loading={busy}
+            disabled={!canStart || busy}
+            containerStyle={styles.btn}
+          />
+        </>
+      ) : (
+        <>
       <Text style={styles.fieldLabel}>이름</Text>
       {Platform.OS === 'web' ? (
         <WebNativeTextInput
@@ -422,6 +537,8 @@ export default function OnboardingScreen() {
         disabled={!canStart || busy}
         containerStyle={styles.btn}
       />
+        </>
+      )}
     </>
   );
 
@@ -637,4 +754,8 @@ const styles = StyleSheet.create({
   },
   hintEm: { ...typeface.sansMedium, color: 'rgba(255,255,255,0.72)' },
   btn: { marginTop: 10 },
+  introLoading: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 });

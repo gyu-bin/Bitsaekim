@@ -1,5 +1,4 @@
--- transcriptions RLS(current_setting('app.device_id')) 의 연결풀 이슈를 피하기 위한 저장 RPC
--- 본인 기기(device_id)로만 기록되도록 서버에서 검증. 같은 곡·예배는 여러 번 기록 가능.
+-- 같은 예배·곡·기기 필사 횟수 제한 해제 (매 완료마다 새 행 insert)
 
 create or replace function public.record_transcription_for_device(
   p_device_id text,

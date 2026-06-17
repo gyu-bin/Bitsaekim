@@ -7,6 +7,7 @@ import { useCallback, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
+  Linking,
   Modal,
   Platform,
   Pressable,
@@ -19,8 +20,11 @@ import {
   View,
 } from 'react-native';
 
+import { RecoveryCodeCard } from '@/components/mypage/RecoveryCodeCard';
+import { GatheringInviteSettings } from '@/components/mypage/GatheringInviteSettings';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
 import { palette, radius, shadow, spacing } from '@/constants/colors';
+import { FEEDBACK_URL } from '@/constants/links';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { useLeaderMyWorships } from '@/hooks/useLeaderMyWorships';
@@ -204,6 +208,7 @@ export default function MypageScreen() {
             </View>
           ) : null}
         </View>
+        <RecoveryCodeCard horizontalGutter={0} />
       </View>
 
       <Modal
@@ -289,6 +294,9 @@ export default function MypageScreen() {
                 <Text style={[styles.shareInviteText, { color: c.accent }]}>초대 링크 공유</Text>
               </TouchableOpacity>
             </>
+          ) : null}
+          {isGatheringOwner && gatheringId && deviceId ? (
+            <GatheringInviteSettings gatheringId={gatheringId} deviceId={deviceId} />
           ) : null}
         </View>
       ) : null}
@@ -488,6 +496,31 @@ export default function MypageScreen() {
         </View>
       )}
 
+      <View style={[styles.settingsSection, { marginHorizontal: horizontalGutter }]}>
+        <Text style={[styles.settingsLabel, { color: c.textSub }]}>설정</Text>
+        <TouchableOpacity
+          style={[styles.feedbackRow, shadow.sm, { borderColor: c.border, backgroundColor: c.card }]}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            void Linking.openURL(FEEDBACK_URL);
+          }}
+          activeOpacity={0.75}
+          accessibilityRole="button"
+          accessibilityLabel="피드백 보내기"
+        >
+          <View style={[styles.feedbackIcon, { backgroundColor: c.accentMuted }]}>
+            <Feather name="message-circle" size={20} color={c.accent} />
+          </View>
+          <View style={styles.feedbackTextCol}>
+            <Text style={[styles.feedbackTitle, { color: c.text }]}>피드백 보내기</Text>
+            <Text style={[styles.feedbackSub, { color: c.textSub }]}>
+              불편한 점이나 개선 아이디어를 알려주세요
+            </Text>
+          </View>
+          <Feather name="chevron-right" size={20} color={c.textSub} />
+        </TouchableOpacity>
+      </View>
+
       <TouchableOpacity
         style={[styles.logoutRow, { borderColor: c.border, backgroundColor: c.card }]}
         onPress={confirmLogout}
@@ -642,6 +675,34 @@ const styles = StyleSheet.create({
     borderWidth: 1,
   },
   linkText: { ...typeface.sansMedium, fontSize: fontSize.md },
+  settingsSection: {
+    marginTop: spacing.lg,
+  },
+  settingsLabel: {
+    ...typeface.sansMedium,
+    fontSize: fontSize.xs,
+    letterSpacing: 0.6,
+    textTransform: 'uppercase',
+    marginBottom: 10,
+  },
+  feedbackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    gap: 12,
+  },
+  feedbackIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  feedbackTextCol: { flex: 1 },
+  feedbackTitle: { ...typeface.sansMedium, fontSize: fontSize.md },
+  feedbackSub: { ...typeface.sans, fontSize: fontSize.sm, marginTop: 4, lineHeight: 19 },
   leaderCard: {
     margin: 16,
     padding: 20,

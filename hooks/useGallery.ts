@@ -16,7 +16,8 @@ async function fetchGalleryPage(
   page: number,
   worshipId?: string,
   mine?: boolean,
-  deviceId?: string | null
+  deviceId?: string | null,
+  since?: string
 ): Promise<GalleryPost[]> {
   let q = supabase
     .from('gallery_posts')
@@ -41,6 +42,7 @@ async function fetchGalleryPage(
 
   if (worshipId) q = q.eq('worship_id', worshipId);
   if (mine && deviceId) q = q.eq('device_id', deviceId);
+  if (since) q = q.gte('created_at', since);
 
   const { data, error } = await q;
   if (error) throw error;
@@ -89,13 +91,13 @@ async function fetchGalleryPage(
   }));
 }
 
-export function useGallery(worshipId?: string, mine?: boolean) {
+export function useGallery(worshipId?: string, mine?: boolean, since?: string) {
   const deviceId = useUserStore((s) => s.deviceId);
 
   return useInfiniteQuery({
-    queryKey: ['gallery', worshipId ?? 'all', mine ? 'mine' : 'all', deviceId],
+    queryKey: ['gallery', worshipId ?? 'all', mine ? 'mine' : 'all', since ?? 'all', deviceId],
     queryFn: async ({ pageParam }) =>
-      fetchGalleryPage(pageParam, worshipId, mine, deviceId),
+      fetchGalleryPage(pageParam, worshipId, mine, deviceId, since),
     getNextPageParam: (lastPage, _all, lastPageParam) =>
       lastPage.length === PAGE ? lastPageParam + 1 : undefined,
     initialPageParam: 0,

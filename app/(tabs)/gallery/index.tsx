@@ -21,6 +21,7 @@ import { useGallery } from '@/hooks/useGallery';
 import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useWorships } from '@/hooks/useWorships';
+import { gallerySinceDate, isWorshipGalleryFilter } from '@/lib/galleryFilter';
 import { isSupabaseConfigured, supabaseMissingConfigUserMessage } from '@/lib/supabase';
 
 export default function GalleryScreen() {
@@ -40,10 +41,11 @@ export default function GalleryScreen() {
     if (filterParam === 'mine') setFilter('mine');
   }, [filterParam]);
 
-  const worshipId = filter !== 'all' && filter !== 'mine' ? filter : undefined;
+  const worshipId = isWorshipGalleryFilter(filter) ? filter : undefined;
   const mine = filter === 'mine';
+  const since = gallerySinceDate(filter);
 
-  const q = useGallery(worshipId, mine);
+  const q = useGallery(worshipId, mine, since);
   const posts = useMemo(() => q.data?.pages.flat() ?? [], [q.data?.pages]);
 
   const [manualRefresh, setManualRefresh] = useState(false);

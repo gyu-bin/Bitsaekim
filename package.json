@@ -11,7 +11,8 @@
     "supabase:link": "npx supabase@latest link --project-ref bdvygleavznqguemxisp",
     "supabase:push": "npx supabase@latest db push || node scripts/supabase-apply-sql.mjs",
     "supabase:apply-sql": "node scripts/supabase-apply-sql.mjs",
-    "supabase:types": "npx supabase@latest gen types typescript --linked 2>/dev/null > types/supabase.gen.ts"
+    "supabase:types": "npx supabase@latest gen types typescript --linked 2>/dev/null > types/supabase.gen.ts",
+    "lint": "expo lint"
   },
   "dependencies": {
     "@expo-google-fonts/dm-mono": "^0.4.2",
@@ -63,6 +64,8 @@
   "devDependencies": {
     "@types/react": "~19.1.0",
     "@types/uuid": "^10.0.0",
+    "eslint": "^9.0.0",
+    "eslint-config-expo": "~10.0.0",
     "react-test-renderer": "19.1.0",
     "supabase": "^2.106.0",
     "typescript": "~5.9.2"

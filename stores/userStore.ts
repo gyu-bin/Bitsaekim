@@ -12,7 +12,10 @@ interface UserStore {
   gatheringInviteCode: string | null;
   /** 모임장 `users.device_id` (gatherings.created_by) */
   gatheringOwnerDeviceId: string | null;
+  /** 기기 이전용 6자리 복구 코드 (서버 동기화) */
+  recoveryCode: string | null;
   setUser: (deviceId: string, name: string, role?: 'user' | 'leader') => void;
+  setRecoveryCode: (code: string | null) => void;
   /** DB와 동기화된 표시 이름만 갱신 */
   setName: (name: string) => void;
   setRole: (role: 'user' | 'leader') => void;
@@ -35,6 +38,7 @@ export const useUserStore = create<UserStore>()(
       gatheringName: null,
       gatheringInviteCode: null,
       gatheringOwnerDeviceId: null,
+      recoveryCode: null,
       setUser: (deviceId, name, role) =>
         set((s) => ({
           deviceId,
@@ -54,6 +58,7 @@ export const useUserStore = create<UserStore>()(
           gatheringOwnerDeviceId,
         }),
       setGatheringOwner: (gatheringOwnerDeviceId) => set({ gatheringOwnerDeviceId }),
+      setRecoveryCode: (recoveryCode) => set({ recoveryCode }),
       clearGathering: () =>
         set({
           gatheringId: null,
@@ -71,6 +76,7 @@ export const useUserStore = create<UserStore>()(
           gatheringName: null,
           gatheringInviteCode: null,
           gatheringOwnerDeviceId: null,
+          recoveryCode: null,
         }),
     }),
     { name: 'user-store', storage: createJSONStorage(() => AsyncStorage) }
