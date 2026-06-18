@@ -21,6 +21,15 @@ export default function MypageStackLayout() {
     >
       <Stack.Screen name="index" options={{ title: '마이페이지' }} />
       <Stack.Screen
+        name="settings"
+        options={{
+          headerShown: true,
+          title: '설정',
+          headerBackTitle: '',
+          presentation: 'card',
+        }}
+      />
+      <Stack.Screen
         name="transcriptions"
         options={{
           headerShown: true,

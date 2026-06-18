@@ -1,5 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
+import type { GalleryTimeFilter } from '@/lib/galleryFilter';
 import { supabase } from '@/lib/supabase';
 import { useUserStore } from '@/stores/userStore';
 import type { GalleryPost } from '@/types';
@@ -7,7 +8,7 @@ import type { GalleryPost } from '@/types';
 const PAGE = 20;
 
 type GalleryRow = GalleryPost & {
-  user?: { name: string } | null;
+  user?: { name: string; avatar_url?: string | null } | null;
   song?: { title: string; artist?: string } | null;
   worship?: { name: string } | null;
 };
@@ -19,10 +20,8 @@ async function fetchGalleryPage(
   deviceId?: string | null,
   since?: string
 ): Promise<GalleryPost[]> {
-  let q = supabase
-    .from('gallery_posts')
-    .select(
-      `
+  let q = supabase.from('gallery_posts').select(
+    `
       id,
       device_id,
       worship_id,
@@ -32,17 +31,17 @@ async function fetchGalleryPage(
       link_url,
       lyrics_share,
       created_at,
-      user:users(name),
+      user:users(name, avatar_url),
       song:songs(title, artist),
       worship:worship_services(name)
     `
-    )
-    .order('created_at', { ascending: false })
-    .range(page * PAGE, (page + 1) * PAGE - 1);
+  );
 
   if (worshipId) q = q.eq('worship_id', worshipId);
   if (mine && deviceId) q = q.eq('device_id', deviceId);
   if (since) q = q.gte('created_at', since);
+
+  q = q.order('created_at', { ascending: false }).range(page * PAGE, (page + 1) * PAGE - 1);
 
   const { data, error } = await q;
   if (error) throw error;
@@ -91,11 +90,16 @@ async function fetchGalleryPage(
   }));
 }
 
-export function useGallery(worshipId?: string, mine?: boolean, since?: string) {
+export function useGallery(
+  worshipId?: string,
+  mine?: boolean,
+  since?: string,
+  timeFilter: GalleryTimeFilter = 'all'
+) {
   const deviceId = useUserStore((s) => s.deviceId);
 
   return useInfiniteQuery({
-    queryKey: ['gallery', worshipId ?? 'all', mine ? 'mine' : 'all', since ?? 'all', deviceId],
+    queryKey: ['gallery', worshipId ?? 'all', mine ? 'mine' : 'all', timeFilter, deviceId],
     queryFn: async ({ pageParam }) =>
       fetchGalleryPage(pageParam, worshipId, mine, deviceId, since),
     getNextPageParam: (lastPage, _all, lastPageParam) =>

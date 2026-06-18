@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { Platform, Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import Animated, { FadeInDown, FadeOutDown } from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
@@ -26,7 +26,7 @@ export function ToastHost() {
 
   if (!visible) return null;
 
-  const iconColor = type === 'error' ? '#E5484D' : type === 'info' ? c.accent : '#30A46C';
+  const iconColor = type === 'error' ? c.danger : type === 'info' ? c.accent : c.success;
 
   return (
     <View
@@ -38,7 +38,6 @@ export function ToastHost() {
         exiting={FadeOutDown.duration(180)}
         style={[
           styles.toast,
-          shadow.md,
           {
             bottom: toastBottom,
             backgroundColor: c.card,
@@ -71,7 +70,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     left: 16,
     right: 16,
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },

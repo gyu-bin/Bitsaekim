@@ -1,7 +1,7 @@
 import { Platform } from 'react-native';
 
 /** 탭 아이콘·라벨 영역 높이 (`AppTabBar`) */
-export const TAB_BAR_CONTENT_HEIGHT = 56;
+export const TAB_BAR_CONTENT_HEIGHT = 46;
 
 export const TAB_BAR_BOTTOM_INSET_MIN = Platform.OS === 'ios' ? 0 : 0;
 

@@ -102,6 +102,26 @@ export async function uploadGalleryJpegFromUri(
   return data.publicUrl;
 }
 
+/** 프로필 사진 JPEG를 avatars/{deviceId}.jpg 로 업로드 */
+export async function uploadAvatarJpegFromUri(
+  deviceId: string,
+  fileUri: string
+): Promise<string | null> {
+  const bytes = await readUriAsJpegBytes(normalizeFileUri(fileUri));
+  if (!bytes) return null;
+
+  const fileName = `avatars/${deviceId}.jpg`;
+  const { error } = await supabase.storage
+    .from('gallery')
+    .upload(fileName, bytes, { contentType: 'image/jpeg', upsert: true });
+
+  if (error) return null;
+
+  const { data } = supabase.storage.from('gallery').getPublicUrl(fileName);
+  const cacheBust = Date.now();
+  return `${data.publicUrl}?v=${cacheBust}`;
+}
+
 /** @deprecated 미리보기 없이 느리게 동작합니다. `pickGalleryImageUri` + `uploadGalleryJpegFromUri` 사용 권장 */
 export async function pickAndUploadImage(
   deviceId: string,

@@ -137,7 +137,7 @@ export default function GalleryComposeScreen() {
       }}
       keyboardShouldPersistTaps="handled"
     >
-      <Card style={styles.infoCard} elevated={false}>
+      <Card style={styles.infoCard} padded={false}>
         <Text style={[styles.lead, { color: c.text }]}>
           필사 기록은 이미 저장되어 있어요. 같은 곡·예배로 여러 번 올릴 수 있어요.
         </Text>

@@ -13,6 +13,8 @@ type Props = PressableProps & {
   color?: string;
   containerStyle?: ViewStyle;
   accessibilityLabel: string;
+  /** ghost — 배경 없이 아이콘만 (마이턴 헤더 스타일) */
+  variant?: 'filled' | 'ghost';
 };
 
 export function IconButton({
@@ -22,6 +24,7 @@ export function IconButton({
   containerStyle,
   onPress,
   accessibilityLabel,
+  variant = 'filled',
   ...rest
 }: Props) {
   const c = useThemeColors();
@@ -36,13 +39,13 @@ export function IconButton({
       }}
       style={({ pressed }) => [
         styles.base,
-        { backgroundColor: c.accentMuted, borderColor: c.border },
+        variant === 'filled' && { backgroundColor: c.surface },
         pressed && styles.pressed,
         containerStyle,
       ]}
       {...rest}
     >
-      <Feather name={icon} size={size} color={color ?? c.text} />
+      <Feather name={icon} size={size} color={color ?? c.textMid} />
     </Pressable>
   );
 }
@@ -54,7 +57,6 @@ const styles = StyleSheet.create({
     borderRadius: radius.full,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: StyleSheet.hairlineWidth,
   },
-  pressed: { opacity: 0.75, transform: [{ scale: 0.96 }] },
+  pressed: { opacity: 0.7, transform: [{ scale: 0.96 }] },
 });

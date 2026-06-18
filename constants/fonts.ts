@@ -28,13 +28,41 @@ export const typeface = {
 } as const;
 
 export const fontSize = {
-  xs: 10,
-  sm: 12,
-  base: 14,
+  xs: 11,
+  sm: 13,
+  base: 15,
   md: 16,
   lg: 18,
   xl: 22,
   '2xl': 28,
-  '3xl': 36,
-  '4xl': 48,
+  '3xl': 34,
+  '4xl': 44,
+} as const;
+
+export const typography = {
+  screenTitle: {
+    ...typeface.sansMedium,
+    fontSize: fontSize['2xl'],
+    letterSpacing: -0.3,
+    lineHeight: 34,
+  },
+  screenSubtitle: {
+    ...typeface.sans,
+    fontSize: fontSize.sm,
+    lineHeight: 20,
+  },
+  cardTitle: {
+    ...typeface.sansMedium,
+    fontSize: fontSize.base,
+    lineHeight: 22,
+  },
+  body: {
+    ...typeface.sans,
+    fontSize: fontSize.base,
+    lineHeight: 22,
+  },
+  chip: {
+    ...typeface.sans,
+    fontSize: fontSize.sm,
+  },
 } as const;

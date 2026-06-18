@@ -5,16 +5,16 @@ import {
   ScrollView,
   StyleSheet,
   Text,
-  TouchableOpacity,
   View,
 } from 'react-native';
 
 import { TranscribeWorshipPickRow } from '@/components/transcribe/TranscribeWorshipPickRow';
+import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { radius, shadow, spacing } from '@/constants/colors';
+import { spacing } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { useThemeColors } from '@/hooks/useThemeColors';
@@ -23,7 +23,7 @@ import { isSupabaseConfigured, supabaseMissingConfigUserMessage } from '@/lib/su
 import { useUserStore } from '@/stores/userStore';
 
 export default function TranscribeHomeScreen() {
-  const { horizontalGutter, insets } = useLayoutMetrics();
+  const { horizontalGutter, insets, listBottomPadding } = useLayoutMetrics();
   const c = useThemeColors();
 
   const gatheringId = useUserStore((s) => s.gatheringId);
@@ -80,7 +80,10 @@ export default function TranscribeHomeScreen() {
       </View>
 
       <ScrollView
-        contentContainerStyle={[styles.body, { paddingHorizontal: horizontalGutter }]}
+        contentContainerStyle={[
+          styles.body,
+          { paddingHorizontal: horizontalGutter, paddingBottom: listBottomPadding },
+        ]}
         refreshControl={
           <RefreshControl
             refreshing={manualRefresh}
@@ -118,29 +121,24 @@ export default function TranscribeHomeScreen() {
                 <Text style={[styles.leaderStripTitle, { color: c.text }]}>인도자</Text>
 
                 {canCreateWorship ? (
-                  <TouchableOpacity
-                    style={[styles.leaderStripPrimary, shadow.accent, { backgroundColor: c.accent }]}
+                  <Button
+                    title="콘티 만들기"
                     onPress={() => router.push('/leader/worship/create' as Href)}
-                    activeOpacity={0.85}
-                    accessibilityRole="button"
                     accessibilityLabel="콘티 만들기"
-                  >
-                    <Text style={[styles.leaderStripPrimaryText, { color: c.onAccent }]}>콘티 만들기</Text>
-                  </TouchableOpacity>
+                    containerStyle={styles.leaderStripPrimaryBtn}
+                  />
                 ) : (
                   <Text style={[styles.leaderStripMuted, { color: c.textSub }]}>
                     예배 등록은 이 모임의 모임장만 할 수 있어요. 콘티 편집은 내가 만든 예배에서 가능해요.
                   </Text>
                 )}
-                <TouchableOpacity
-                  style={[styles.leaderStripSecondary, { borderColor: c.accent, backgroundColor: c.accentMuted }]}
+                <Button
+                  title="찬양 곡 추가"
+                  variant="outline"
                   onPress={() => router.push('/leader/song/create' as Href)}
-                  activeOpacity={0.85}
-                  accessibilityRole="button"
                   accessibilityLabel="찬양 곡 추가"
-                >
-                  <Text style={[styles.leaderStripSecondaryText, { color: c.accentDark }]}>찬양 곡 추가</Text>
-                </TouchableOpacity>
+                  containerStyle={styles.leaderStripSecondaryBtn}
+                />
               </Card>
             ) : null}
 
@@ -180,7 +178,7 @@ export default function TranscribeHomeScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  body: { paddingBottom: spacing['2xl'], flexGrow: 1 },
+  body: { flexGrow: 1 },
   hint: {
     ...typeface.sans,
     fontSize: fontSize.sm,
@@ -200,22 +198,7 @@ const styles = StyleSheet.create({
     height: 3,
   },
   leaderStripTitle: { ...typeface.serifBold, fontSize: fontSize.lg, marginTop: 4 },
-  leaderStripPrimary: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 14,
-    paddingVertical: 14,
-    borderRadius: radius.md,
-  },
-  leaderStripPrimaryText: { ...typeface.sansMedium, fontSize: fontSize.md },
+  leaderStripPrimaryBtn: { marginTop: 14 },
   leaderStripMuted: { ...typeface.sans, fontSize: fontSize.sm, lineHeight: 20, marginTop: 12 },
-  leaderStripSecondary: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 10,
-    paddingVertical: 12,
-    borderRadius: radius.md,
-    borderWidth: 1,
-  },
-  leaderStripSecondaryText: { ...typeface.sansMedium, fontSize: fontSize.sm },
+  leaderStripSecondaryBtn: { marginTop: 10 },
 });

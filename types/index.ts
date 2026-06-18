@@ -2,6 +2,7 @@ export interface User {
   device_id: string;
   name: string;
   role: 'user' | 'leader';
+  avatar_url?: string | null;
   created_at: string;
 }
 
@@ -67,7 +68,7 @@ export interface GalleryPost {
   /** 나누고 싶은 가사·필사 문구 */
   lyrics_share?: string | null;
   created_at: string;
-  user?: Pick<User, 'name'> | null;
+  user?: Pick<User, 'name' | 'avatar_url'> | null;
   song?: Pick<Song, 'title' | 'artist'> | null;
   worship?: Pick<WorshipService, 'name'> | null;
   likes_count?: number;

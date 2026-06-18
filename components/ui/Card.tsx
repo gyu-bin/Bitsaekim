@@ -1,20 +1,18 @@
 import { StyleSheet, View, type ViewProps } from 'react-native';
 
-import { radius, shadow } from '@/constants/colors';
+import { radius } from '@/constants/colors';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
 type Props = ViewProps & {
-  elevated?: boolean;
   padded?: boolean;
 };
 
-export function Card({ style, children, elevated = true, padded = true, ...rest }: Props) {
+export function Card({ style, children, padded = true, ...rest }: Props) {
   const c = useThemeColors();
   return (
     <View
       style={[
         styles.card,
-        elevated && shadow.sm,
         {
           backgroundColor: c.card,
           borderColor: c.border,
@@ -31,7 +29,7 @@ export function Card({ style, children, elevated = true, padded = true, ...rest 
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
   },

@@ -1,8 +1,8 @@
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import { useLocalSearchParams } from 'expo-router';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   FlatList,
   RefreshControl,
   StyleSheet,
@@ -15,13 +15,14 @@ import type { GalleryFilter } from '@/components/gallery/FilterChips';
 import { FilterChips } from '@/components/gallery/FilterChips';
 import { PostCard } from '@/components/gallery/PostCard';
 import { EmptyState } from '@/components/ui/EmptyState';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { shadow, spacing } from '@/constants/colors';
+import { spacing } from '@/constants/colors';
 import { useGallery } from '@/hooks/useGallery';
 import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useWorships } from '@/hooks/useWorships';
-import { gallerySinceDate, isWorshipGalleryFilter } from '@/lib/galleryFilter';
+import { galleryPostMatchesSince, gallerySinceDate, galleryTimeFilterKey, isWorshipGalleryFilter } from '@/lib/galleryFilter';
 import { isSupabaseConfigured, supabaseMissingConfigUserMessage } from '@/lib/supabase';
 
 export default function GalleryScreen() {
@@ -43,10 +44,15 @@ export default function GalleryScreen() {
 
   const worshipId = isWorshipGalleryFilter(filter) ? filter : undefined;
   const mine = filter === 'mine';
-  const since = gallerySinceDate(filter);
+  const timeFilter = galleryTimeFilterKey(filter);
+  const since = useMemo(() => gallerySinceDate(filter), [filter]);
 
-  const q = useGallery(worshipId, mine, since);
-  const posts = useMemo(() => q.data?.pages.flat() ?? [], [q.data?.pages]);
+  const q = useGallery(worshipId, mine, since, timeFilter);
+  const posts = useMemo(() => {
+    const flat = q.data?.pages.flat() ?? [];
+    if (!since) return flat;
+    return flat.filter((p) => galleryPostMatchesSince(p.created_at, since));
+  }, [q.data?.pages, since]);
 
   const [manualRefresh, setManualRefresh] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
@@ -69,6 +75,7 @@ export default function GalleryScreen() {
         <ScreenHeader
           title="나눔"
           subtitle="필사·사진, 찬양과 묵상을 함께 나눠요"
+          showThemeToggle
         />
         <FilterChips
           worships={worships ?? []}
@@ -122,7 +129,7 @@ export default function GalleryScreen() {
               description={supabaseMissingConfigUserMessage()}
             />
           ) : showInitialLoader ? (
-            <ActivityIndicator color={c.accent} style={styles.loader} />
+            <LoadingSpinner />
           ) : q.isError ? (
             <EmptyState
               icon="alert-circle"
@@ -138,9 +145,7 @@ export default function GalleryScreen() {
           )
         }
         ListFooterComponent={
-          q.isFetchingNextPage ? (
-            <ActivityIndicator color={c.accent} style={{ marginVertical: 12 }} />
-          ) : null
+          q.isFetchingNextPage ? <LoadingSpinner compact style={{ marginVertical: 12 }} /> : null
         }
         renderItem={({ item }) => (
           <View style={{ width: cellWidth, marginBottom: gridGap }}>
@@ -150,12 +155,15 @@ export default function GalleryScreen() {
       />
       <View style={[styles.fabWrap, { bottom: listPadBottom + 4, right: horizontalGutter }]} pointerEvents="box-none">
         <TouchableOpacity
-          style={[styles.fab, shadow.accent, { backgroundColor: c.accent }]}
-          onPress={() => setCreateOpen(true)}
+          style={[styles.fab, { backgroundColor: c.text }]}
+          onPress={() => {
+            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setCreateOpen(true);
+          }}
           accessibilityRole="button"
           accessibilityLabel="나눔 글 올리기"
         >
-          <Feather name="plus" size={26} color={c.onAccent} />
+          <Feather name="plus" size={24} color={c.card} />
         </TouchableOpacity>
       </View>
       <GalleryCreateSheet visible={createOpen} onClose={() => setCreateOpen(false)} />
@@ -167,15 +175,14 @@ const styles = StyleSheet.create({
   root: { flex: 1 },
   listHeader: { paddingBottom: 4 },
   listContent: { paddingTop: 4 },
-  loader: { marginTop: 16, marginBottom: 8 },
   fabWrap: {
     position: 'absolute',
     alignItems: 'flex-end',
   },
   fab: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     alignItems: 'center',
     justifyContent: 'center',
   },

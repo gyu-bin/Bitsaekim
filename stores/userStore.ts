@@ -14,8 +14,14 @@ interface UserStore {
   gatheringOwnerDeviceId: string | null;
   /** 기기 이전용 6자리 복구 코드 (서버 동기화) */
   recoveryCode: string | null;
+  /** 로컬 프로필 사진 file:// URI */
+  profilePhotoUri: string | null;
+  /** 서버에 동기화된 프로필 사진 public URL */
+  avatarUrl: string | null;
   setUser: (deviceId: string, name: string, role?: 'user' | 'leader') => void;
   setRecoveryCode: (code: string | null) => void;
+  setProfilePhoto: (uri: string | null) => void;
+  setAvatarUrl: (url: string | null) => void;
   /** DB와 동기화된 표시 이름만 갱신 */
   setName: (name: string) => void;
   setRole: (role: 'user' | 'leader') => void;
@@ -39,6 +45,8 @@ export const useUserStore = create<UserStore>()(
       gatheringInviteCode: null,
       gatheringOwnerDeviceId: null,
       recoveryCode: null,
+      profilePhotoUri: null,
+      avatarUrl: null,
       setUser: (deviceId, name, role) =>
         set((s) => ({
           deviceId,
@@ -59,6 +67,8 @@ export const useUserStore = create<UserStore>()(
         }),
       setGatheringOwner: (gatheringOwnerDeviceId) => set({ gatheringOwnerDeviceId }),
       setRecoveryCode: (recoveryCode) => set({ recoveryCode }),
+      setProfilePhoto: (profilePhotoUri) => set({ profilePhotoUri }),
+      setAvatarUrl: (avatarUrl) => set({ avatarUrl }),
       clearGathering: () =>
         set({
           gatheringId: null,
@@ -77,6 +87,8 @@ export const useUserStore = create<UserStore>()(
           gatheringInviteCode: null,
           gatheringOwnerDeviceId: null,
           recoveryCode: null,
+          profilePhotoUri: null,
+          avatarUrl: null,
         }),
     }),
     { name: 'user-store', storage: createJSONStorage(() => AsyncStorage) }

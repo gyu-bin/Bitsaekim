@@ -9,7 +9,7 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { radius, shadow } from '@/constants/colors';
+import { radius } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
@@ -48,14 +48,14 @@ export function Button({
       onPress={handlePress}
       style={({ pressed }) => [
         styles.base,
-        variant === 'primary' && [styles.primary, shadow.accent, { backgroundColor: c.accent }],
+        variant === 'primary' && { backgroundColor: c.accent },
         variant === 'ghost' && { backgroundColor: 'transparent' },
         variant === 'outline' && {
           backgroundColor: c.card,
           borderWidth: StyleSheet.hairlineWidth,
           borderColor: c.border,
         },
-        (pressed || disabled) && { opacity: pressed ? 0.88 : 0.55 },
+        (pressed || disabled) && { opacity: pressed ? 0.85 : 0.5 },
         containerStyle,
       ]}
       {...rest}
@@ -86,17 +86,15 @@ export function Button({
 
 const styles = StyleSheet.create({
   base: {
-    paddingVertical: 15,
-    paddingHorizontal: 24,
-    borderRadius: radius.full,
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
-    minHeight: 52,
+    minHeight: 48,
   },
-  primary: {},
   text: {
     ...typeface.sansMedium,
-    fontSize: fontSize.md,
-    letterSpacing: 0.2,
+    fontSize: fontSize.base,
   },
 });

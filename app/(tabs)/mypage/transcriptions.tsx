@@ -5,7 +5,6 @@ import { useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import { useCallback, useLayoutEffect, useMemo, useState } from 'react';
 import {
-  ActivityIndicator,
   Alert,
   FlatList,
   StyleSheet,
@@ -15,6 +14,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useMyTranscriptions, type MyTranscriptionRow } from '@/hooks/useTranscription';
 import { deleteTranscriptionForDevice } from '@/lib/transcriptionDelete';
@@ -174,7 +174,7 @@ export default function MyTranscriptionsScreen() {
   return (
     <View style={[styles.root, { backgroundColor: c.background }]}>
       {isLoading ? (
-        <ActivityIndicator color={c.accent} style={{ marginTop: 24 }} />
+        <LoadingSpinner />
       ) : (
         <FlatList
           data={rows ?? []}

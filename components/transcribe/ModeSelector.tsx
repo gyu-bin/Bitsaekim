@@ -10,7 +10,8 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { fontSize, typeface } from '@/constants/fonts';
+import { radius } from '@/constants/colors';
+import { typography } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import type { TranscribeMode } from '@/types';
 
@@ -48,7 +49,7 @@ export function ModeSelector({ visible, onClose, onSelect }: Props) {
         <Pressable
           style={[
             styles.sheet,
-            { backgroundColor: c.card, paddingBottom: insets.bottom + 20 },
+            { backgroundColor: c.card, borderColor: c.border, paddingBottom: insets.bottom + 20 },
           ]}
           onPress={(e) => e.stopPropagation()}
         >
@@ -58,7 +59,7 @@ export function ModeSelector({ visible, onClose, onSelect }: Props) {
           </Text>
 
           <TouchableOpacity
-            style={[styles.option, { borderColor: c.border }]}
+            style={[styles.option, { backgroundColor: c.surface, borderColor: c.border }]}
             onPress={() => pick('handwriting')}
             accessibilityRole="button"
             accessibilityLabel="손글씨 필사"
@@ -73,7 +74,7 @@ export function ModeSelector({ visible, onClose, onSelect }: Props) {
           </TouchableOpacity>
 
           <TouchableOpacity
-            style={[styles.option, { borderColor: c.border }]}
+            style={[styles.option, { backgroundColor: c.surface, borderColor: c.border }]}
             onPress={() => pick('typing')}
             accessibilityRole="button"
             accessibilityLabel="타이핑 필사"
@@ -99,22 +100,26 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   sheet: {
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderLeftWidth: StyleSheet.hairlineWidth,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderColor: '#EBEBEB',
     padding: 20,
     gap: 12,
   },
-  title: { ...typeface.serifBold, fontSize: fontSize.lg },
-  hint: { ...typeface.sans, fontSize: fontSize.sm, marginBottom: 4 },
+  title: { ...typography.cardTitle, fontSize: 20 },
+  hint: { ...typography.screenSubtitle, marginBottom: 4 },
   option: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 14,
     padding: 16,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
   },
-  emoji: { fontSize: 28 },
-  optTitle: { ...typeface.sansMedium, fontSize: fontSize.md },
-  optSub: { ...typeface.sans, fontSize: fontSize.sm, marginTop: 4 },
+  emoji: { fontSize: 30 },
+  optTitle: { ...typography.cardTitle },
+  optSub: { ...typography.screenSubtitle, marginTop: 4 },
 });

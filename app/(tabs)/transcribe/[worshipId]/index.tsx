@@ -13,7 +13,10 @@ import {
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { EmptyState } from '@/components/ui/EmptyState';
 import { fontSize, typeface } from '@/constants/fonts';
+import { radius, spacing } from '@/constants/colors';
+import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { useSetlistsByWorshipIds } from '@/hooks/useSetlist';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useWorships } from '@/hooks/useWorships';
@@ -41,6 +44,7 @@ export default function TranscribeWorshipHubScreen() {
   const { worshipId } = useLocalSearchParams<{ worshipId: string }>();
   const navigation = useNavigation();
   const insets = useSafeAreaInsets();
+  const { horizontalGutter, listBottomPadding } = useLayoutMetrics();
   const c = useThemeColors();
 
   const deviceId = useUserStore((s) => s.deviceId);
@@ -113,10 +117,17 @@ export default function TranscribeWorshipHubScreen() {
       {showWorshipLoader ? (
         <LoadingSpinner />
       ) : !base ? (
-        <Text style={[styles.fallback, { color: c.textSub }]}>예배를 찾을 수 없어요.</Text>
+        <EmptyState
+          icon="calendar"
+          title="예배를 찾을 수 없어요"
+          description="목록으로 돌아가 다른 예배를 선택해 주세요."
+        />
       ) : (
         <ScrollView
-          contentContainerStyle={styles.scroll}
+          contentContainerStyle={[
+            styles.scroll,
+            { paddingHorizontal: horizontalGutter, paddingBottom: listBottomPadding },
+          ]}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -191,15 +202,13 @@ export default function TranscribeWorshipHubScreen() {
 
 const styles = StyleSheet.create({
   root: { flex: 1 },
-  scroll: { padding: 20, paddingBottom: 40 },
-  fallback: { ...typeface.sans, fontSize: fontSize.md, textAlign: 'center', marginTop: 48 },
+  scroll: { paddingTop: spacing.lg },
   hint: { ...typeface.sans, fontSize: fontSize.sm, lineHeight: 22, marginBottom: 8 },
-  seriesMeta: { ...typeface.sans, fontSize: fontSize.xs, marginBottom: 16 },
-  sectionTitle: { ...typeface.serifBold, fontSize: fontSize.lg, marginBottom: 12 },
+  seriesMeta: { ...typeface.sans, fontSize: fontSize.xs, marginBottom: spacing.lg },
   seriesRow: {
-    borderRadius: 14,
+    borderRadius: radius.lg,
     borderWidth: 1,
-    marginBottom: 12,
+    marginBottom: spacing.md,
     overflow: 'hidden',
   },
   seriesRowMain: {

@@ -13,7 +13,6 @@ export function Input(props: TextInputProps) {
         styles.input,
         {
           color: c.text,
-          borderColor: c.border,
           backgroundColor: c.surface,
         },
       ]}
@@ -26,10 +25,9 @@ const styles = StyleSheet.create({
   input: {
     ...typeface.sans,
     fontSize: fontSize.md,
-    borderWidth: 1,
-    borderRadius: radius.md,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    minHeight: 50,
+    borderRadius: radius.lg,
+    paddingHorizontal: 18,
+    paddingVertical: 15,
+    minHeight: 52,
   },
 });

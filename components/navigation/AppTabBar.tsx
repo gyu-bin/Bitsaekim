@@ -1,11 +1,17 @@
 import { Feather } from '@expo/vector-icons';
 import type { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import * as Haptics from 'expo-haptics';
-import { Pressable, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
+import { useEffect } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import Animated, {
+  interpolate,
+  useAnimatedStyle,
+  useSharedValue,
+  withSpring,
+} from 'react-native-reanimated';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { shadow } from '@/constants/colors';
-import { fontSize, typeface } from '@/constants/fonts';
+import { typography } from '@/constants/fonts';
 import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/tabBar';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
@@ -17,13 +23,77 @@ const TAB_ICONS: Record<string, React.ComponentProps<typeof Feather>['name']> = 
 
 const HIDDEN_TABS = new Set(['index']);
 
+const SPRING = { damping: 20, stiffness: 280, mass: 0.7 };
+
+type TabItemProps = {
+  focused: boolean;
+  label: string;
+  icon: React.ComponentProps<typeof Feather>['name'];
+  onPress: () => void;
+  accessibilityLabel: string;
+};
+
+function TabItem({ focused, label, icon, onPress, accessibilityLabel }: TabItemProps) {
+  const c = useThemeColors();
+  const focus = useSharedValue(focused ? 1 : 0);
+  const press = useSharedValue(1);
+
+  useEffect(() => {
+    focus.value = withSpring(focused ? 1 : 0, SPRING);
+  }, [focused, focus]);
+
+  const iconWrapStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: press.value * interpolate(focus.value, [0, 1], [1, 1.1]) },
+    ],
+  }));
+
+  const labelStyle = useAnimatedStyle(() => ({
+    opacity: interpolate(focus.value, [0, 1], [0.45, 1]),
+    transform: [{ translateY: interpolate(focus.value, [0, 1], [1, 0]) }],
+  }));
+
+  const dotStyle = useAnimatedStyle(() => ({
+    opacity: focus.value,
+    transform: [{ scale: interpolate(focus.value, [0, 1], [0.4, 1]) }],
+  }));
+
+  return (
+    <Pressable
+      onPress={onPress}
+      onPressIn={() => {
+        press.value = withSpring(0.9, SPRING);
+      }}
+      onPressOut={() => {
+        press.value = withSpring(1, SPRING);
+      }}
+      style={styles.item}
+      accessibilityRole="button"
+      accessibilityState={focused ? { selected: true } : {}}
+      accessibilityLabel={accessibilityLabel}
+    >
+      <Animated.View style={[styles.iconWrap, iconWrapStyle]}>
+        <Feather name={icon} size={19} color={focused ? c.text : c.textSub} />
+        <Animated.View style={[styles.dot, dotStyle, { backgroundColor: c.accent }]} />
+      </Animated.View>
+      <Animated.Text
+        style={[
+          styles.label,
+          labelStyle,
+          { color: focused ? c.text : c.textSub },
+          focused && styles.labelActive,
+        ]}
+        numberOfLines={1}
+      >
+        {label}
+      </Animated.Text>
+    </Pressable>
+  );
+}
+
 export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const c = useThemeColors();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
-  const isWide = width >= 600;
-  const barWidth = isWide ? Math.min(380, width - 40) : width;
-
   const visibleRoutes = state.routes.filter((r) => !HIDDEN_TABS.has(r.name));
 
   return (
@@ -31,25 +101,13 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
       style={[
         styles.host,
         {
-          paddingBottom: insets.bottom,
-          backgroundColor: isWide ? 'transparent' : c.tabBar,
-          borderTopColor: isWide ? 'transparent' : c.tabBarBorder,
+          paddingBottom: Math.max(insets.bottom, 4),
+          backgroundColor: c.tabBar,
+          borderTopColor: c.tabBarBorder,
         },
       ]}
-      pointerEvents="box-none"
     >
-      <View
-        style={[
-          styles.bar,
-          {
-            width: barWidth,
-            backgroundColor: c.tabBar,
-            borderColor: c.tabBarBorder,
-          },
-          isWide ? styles.barWide : styles.barPhone,
-          isWide && shadow.md,
-        ]}
-      >
+      <View style={styles.bar}>
         {visibleRoutes.map((route) => {
           const routeIndex = state.routes.findIndex((r) => r.key === route.key);
           const focused = state.index === routeIndex;
@@ -72,43 +130,15 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
             }
           };
 
-          const onLongPress = () => {
-            navigation.emit({ type: 'tabLongPress', target: route.key });
-          };
-
           return (
-            <Pressable
+            <TabItem
               key={route.key}
+              focused={focused}
+              label={String(label)}
+              icon={icon}
               onPress={onPress}
-              onLongPress={onLongPress}
-              style={styles.item}
-              accessibilityRole="button"
-              accessibilityState={focused ? { selected: true } : {}}
               accessibilityLabel={options.tabBarAccessibilityLabel ?? String(label)}
-            >
-              <View
-                style={[
-                  styles.iconWrap,
-                  focused && { backgroundColor: c.accentMuted },
-                ]}
-              >
-                <Feather
-                  name={icon}
-                  size={22}
-                  color={focused ? c.accent : c.textSub}
-                />
-              </View>
-              <Text
-                style={[
-                  styles.label,
-                  { color: focused ? c.accent : c.textSub },
-                  focused && styles.labelActive,
-                ]}
-                numberOfLines={1}
-              >
-                {label}
-              </Text>
-            </Pressable>
+            />
           );
         })}
       </View>
@@ -119,45 +149,41 @@ export function AppTabBar({ state, descriptors, navigation }: BottomTabBarProps)
 const styles = StyleSheet.create({
   host: {
     borderTopWidth: StyleSheet.hairlineWidth,
-    alignItems: 'center',
   },
   bar: {
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: TAB_BAR_CONTENT_HEIGHT,
-    paddingHorizontal: 8,
-    paddingTop: 6,
-    paddingBottom: 4,
-  },
-  barPhone: {
-    borderTopWidth: 0,
-  },
-  barWide: {
-    marginBottom: 10,
-    borderRadius: 28,
-    borderWidth: StyleSheet.hairlineWidth,
-    paddingHorizontal: 12,
+    paddingTop: 4,
+    paddingBottom: 2,
   },
   item: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     gap: 2,
-    minHeight: 48,
+    minHeight: 40,
+    paddingVertical: 2,
   },
   iconWrap: {
-    width: 40,
-    height: 32,
-    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
+    width: 28,
+    height: 24,
+  },
+  dot: {
+    position: 'absolute',
+    bottom: -2,
+    width: 4,
+    height: 4,
+    borderRadius: 2,
   },
   label: {
-    ...typeface.sans,
-    fontSize: 10,
-    letterSpacing: 0.1,
+    ...typography.chip,
+    fontSize: 9,
   },
   labelActive: {
-    ...typeface.sansMedium,
+    ...typography.chip,
+    fontSize: 9,
   },
 });

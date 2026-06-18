@@ -23,6 +23,8 @@ import {
   GalleryPostThumb,
   GALLERY_THUMB_ASPECT,
 } from '@/components/gallery/GalleryPostThumb';
+import { AuthorAvatar } from '@/components/ui/AuthorAvatar';
+import { radius } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { deleteGalleryPost } from '@/lib/galleryDelete';
@@ -32,6 +34,7 @@ import {
   normalizeImageUri,
   resolveGalleryImageUrlForDisplay,
 } from '@/lib/galleryImageUrl';
+import { resolveProfilePhotoUri } from '@/lib/profilePhoto';
 import { useUserStore } from '@/stores/userStore';
 import type { GalleryPost } from '@/types';
 
@@ -57,6 +60,8 @@ function PostCardInner({ post, thumbWidth }: PostCardProps) {
   const qc = useQueryClient();
   const deviceId = useUserStore((s) => s.deviceId);
   const myDisplayName = useUserStore((s) => s.name);
+  const myAvatarUrl = useUserStore((s) => s.avatarUrl);
+  const myProfilePhotoUri = useUserStore((s) => s.profilePhotoUri);
   const { width: winW } = useWindowDimensions();
   const detailImageMaxH = Math.round(winW * 0.85);
   const canEditMyPost = Boolean(deviceId && post.device_id === deviceId);
@@ -119,6 +124,17 @@ function PostCardInner({ post, thumbWidth }: PostCardProps) {
     return fromPost || '이름 없음';
   }, [deviceId, post.device_id, post.user?.name, myDisplayName]);
   const authorLine = `작성 · ${authorName}`;
+
+  const authorAvatarUri = useMemo(() => {
+    const remote = post.user?.avatar_url?.trim();
+    if (remote) return remote;
+    if (deviceId && post.device_id === deviceId) {
+      if (myAvatarUrl?.trim()) return myAvatarUrl.trim();
+      if (myProfilePhotoUri) return resolveProfilePhotoUri(myProfilePhotoUri);
+    }
+    return null;
+  }, [deviceId, post.device_id, post.user?.avatar_url, myAvatarUrl, myProfilePhotoUri]);
+
   const openDetail = useCallback(() => {
     setDetailOpen(true);
   }, []);
@@ -261,9 +277,17 @@ function PostCardInner({ post, thumbWidth }: PostCardProps) {
         )}
 
         <View style={styles.bodyWrap}>
-          <Text style={[styles.author, { color: c.textSub }]} numberOfLines={1}>
-            {authorLine}
-          </Text>
+          <View style={styles.authorRow}>
+            <AuthorAvatar
+              name={authorName}
+              uri={authorAvatarUri}
+              size={24}
+              recyclingKey={`author-${post.device_id}`}
+            />
+            <Text style={[styles.author, { color: c.textSub }]} numberOfLines={1}>
+              {authorLine}
+            </Text>
+          </View>
           <Text style={[styles.song, { color: c.text }]} numberOfLines={1}>
             {post.song?.title ?? (hasLyrics || hasLink ? '찬양 나눔' : '곡')}
           </Text>
@@ -371,8 +395,8 @@ function PostCardInner({ post, thumbWidth }: PostCardProps) {
                   accessibilityRole="button"
                   accessibilityLabel="삭제"
                 >
-                  <Feather name="trash-2" size={18} color="#c44" />
-                  <Text style={[styles.detailMenuLabel, styles.previewMenuLabelDanger]}>삭제</Text>
+                  <Feather name="trash-2" size={18} color={c.danger} />
+                  <Text style={[styles.detailMenuLabel, { color: c.danger }]}>삭제</Text>
                 </Pressable>
               ) : null}
               <Pressable
@@ -411,7 +435,18 @@ function PostCardInner({ post, thumbWidth }: PostCardProps) {
             ) : null}
 
             <View style={styles.detailBody}>
-              <Text style={[styles.detailAuthor, { color: c.textSub }]}>{authorLine}</Text>
+              <View style={styles.detailAuthorRow}>
+                <AuthorAvatar
+                  name={authorName}
+                  uri={authorAvatarUri}
+                  size={40}
+                  recyclingKey={`author-detail-${post.device_id}`}
+                />
+                <View style={styles.detailAuthorText}>
+                  <Text style={[styles.detailAuthorLabel, { color: c.textSub }]}>작성</Text>
+                  <Text style={[styles.detailAuthorName, { color: c.text }]}>{authorName}</Text>
+                </View>
+              </View>
               <Text style={[styles.detailSong, { color: c.text }]}>
                 {post.song?.title ?? (hasLyrics || hasLink ? '찬양 나눔' : '곡')}
               </Text>
@@ -546,6 +581,7 @@ function postCardPropsEqual(prev: PostCardProps, next: PostCardProps) {
     a.likes_count === b.likes_count &&
     a.is_liked === b.is_liked &&
     a.user?.name === b.user?.name &&
+    a.user?.avatar_url === b.user?.avatar_url &&
     a.device_id === b.device_id &&
     a.song?.title === b.song?.title &&
     a.worship?.name === b.worship?.name
@@ -556,14 +592,14 @@ export const PostCard = memo(PostCardInner, postCardPropsEqual);
 
 const styles = StyleSheet.create({
   card: {
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     overflow: 'hidden',
     flex: 1,
   },
   cardPressable: {
-    borderTopLeftRadius: 11,
-    borderTopRightRadius: 11,
+    borderTopLeftRadius: radius.xl,
+    borderTopRightRadius: radius.xl,
     overflow: 'hidden',
   },
   cardPressablePressed: {
@@ -578,10 +614,17 @@ const styles = StyleSheet.create({
   placeholderEmoji: { fontSize: 40 },
   thumbFailText: { ...typeface.sans, fontSize: fontSize.xs, textAlign: 'center' },
   bodyWrap: { paddingHorizontal: 12, paddingTop: 12, paddingBottom: 10, gap: 6 },
+  authorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 2,
+  },
   author: {
     ...typeface.sansMedium,
     fontSize: fontSize.xs,
-    marginBottom: 2,
+    flex: 1,
+    minWidth: 0,
   },
   song: { ...typeface.serif, fontSize: fontSize.sm },
   worship: { ...typeface.sans, fontSize: fontSize.xs },
@@ -674,9 +717,21 @@ const styles = StyleSheet.create({
     paddingTop: 20,
     gap: 10,
   },
-  detailAuthor: {
+  detailAuthorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 4,
+  },
+  detailAuthorText: { flex: 1, minWidth: 0 },
+  detailAuthorLabel: {
+    ...typeface.sans,
+    fontSize: fontSize.xs,
+  },
+  detailAuthorName: {
     ...typeface.sansMedium,
-    fontSize: fontSize.sm,
+    fontSize: fontSize.md,
+    marginTop: 2,
   },
   detailSong: {
     ...typeface.serif,
@@ -772,8 +827,5 @@ const styles = StyleSheet.create({
   previewMenuRowLast: {
     borderBottomWidth: 0,
     justifyContent: 'center',
-  },
-  previewMenuLabelDanger: {
-    color: '#c44',
   },
 });

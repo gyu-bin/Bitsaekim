@@ -7,7 +7,6 @@ import { useCallback, useState } from 'react';
 import {
   Alert,
   KeyboardAvoidingView,
-  Linking,
   Modal,
   Platform,
   Pressable,
@@ -20,25 +19,24 @@ import {
   View,
 } from 'react-native';
 
-import { RecoveryCodeCard } from '@/components/mypage/RecoveryCodeCard';
-import { GatheringInviteSettings } from '@/components/mypage/GatheringInviteSettings';
+import { ProfileAvatar } from '@/components/mypage/ProfileAvatar';
+import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
+import { IconButton } from '@/components/ui/IconButton';
 import { ScreenHeader } from '@/components/ui/ScreenHeader';
-import { palette, radius, shadow, spacing } from '@/constants/colors';
-import { FEEDBACK_URL } from '@/constants/links';
+import { radius, shadow, spacing } from '@/constants/colors';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useLayoutMetrics } from '@/hooks/useLayoutMetrics';
 import { useLeaderMyWorships } from '@/hooks/useLeaderMyWorships';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useTranscriptionStats } from '@/hooks/useTranscription';
 import { buildGatheringInviteUrl } from '@/lib/gatheringInviteLink';
-import { rememberRegisteredDeviceId } from '@/lib/device';
 import { supabase } from '@/lib/supabase';
 import { updateUserDisplayName } from '@/lib/userProfile';
 import { useUserStore } from '@/stores/userStore';
 
 export default function MypageScreen() {
   const qc = useQueryClient();
-  const { horizontalGutter, insets } = useLayoutMetrics();
+  const { horizontalGutter, insets, listBottomPadding } = useLayoutMetrics();
   const c = useThemeColors();
   const deviceId = useUserStore((s) => s.deviceId);
   const name = useUserStore((s) => s.name);
@@ -49,7 +47,6 @@ export default function MypageScreen() {
   const gatheringName = useUserStore((s) => s.gatheringName);
   const gatheringInviteCode = useUserStore((s) => s.gatheringInviteCode);
   const gatheringOwnerDeviceId = useUserStore((s) => s.gatheringOwnerDeviceId);
-  const logout = useUserStore((s) => s.logout);
   const { data: stats } = useTranscriptionStats();
   const { data: myWorships, isLoading: myWorshipsLoading } = useLeaderMyWorships(
     deviceId ?? null,
@@ -64,9 +61,6 @@ export default function MypageScreen() {
   const gatheringOwnerKnown = gatheringId != null && gatheringOwnerDeviceId != null;
   const isNonOwnerLeader =
     role === 'leader' && !!gatheringId && gatheringOwnerKnown && !isGatheringOwner;
-
-  const initial = (name?.[0] ?? '?').toUpperCase();
-  const idShort = deviceId ? `${deviceId.slice(0, 6)}…` : '—';
 
   const [nameEditOpen, setNameEditOpen] = useState(false);
   const [nameDraft, setNameDraft] = useState('');
@@ -128,25 +122,6 @@ export default function MypageScreen() {
     }
   }, [gatheringInviteCode]);
 
-  const confirmLogout = () => {
-    Alert.alert(
-      '로그아웃',
-      '이 기기에서 이름·모임 정보를 지웁니다. 같은 기기라면 시작 화면에서 「이어서 시작하기」로 다시 들어올 수 있어요.',
-      [
-      { text: '취소', style: 'cancel' },
-      {
-        text: '로그아웃',
-        style: 'destructive',
-        onPress: async () => {
-          if (deviceId) await rememberRegisteredDeviceId(deviceId);
-          logout();
-          qc.clear();
-          router.replace('/onboarding');
-        },
-      },
-    ]);
-  };
-
   const leaveLeader = () => {
     Alert.alert('인도자 해제', '일반 참여자 모드로 돌아갈까요?', [
       { text: '취소', style: 'cancel' },
@@ -171,19 +146,22 @@ export default function MypageScreen() {
   return (
     <ScrollView
       style={[styles.root, { backgroundColor: c.background }]}
-      contentContainerStyle={{ paddingBottom: insets.bottom + spacing.xl }}
+      contentContainerStyle={{ paddingBottom: listBottomPadding }}
     >
       <View style={[styles.profileSection, { paddingTop: insets.top + spacing.sm, paddingHorizontal: horizontalGutter }]}>
         <ScreenHeader
           title="마이"
           subtitle={gatheringName ?? '모임에 참여해 주세요'}
-          showThemeToggle
-          large={false}
+          rightAction={
+            <IconButton
+              icon="settings"
+              accessibilityLabel="설정"
+              onPress={() => router.push('/mypage/settings' as Href)}
+            />
+          }
         />
-        <View style={[styles.profileCard, shadow.sm, { backgroundColor: c.card, borderColor: c.border }]}>
-          <View style={[styles.avatar, { backgroundColor: c.accent }]}>
-            <Text style={[styles.avatarText, { color: c.onAccent }]}>{initial}</Text>
-          </View>
+        <View style={[styles.profileCard, { backgroundColor: c.card, borderColor: c.border }]}>
+          <ProfileAvatar name={name} deviceId={deviceId} />
           <TouchableOpacity
             style={styles.nameEditRow}
             onPress={() => {
@@ -208,7 +186,6 @@ export default function MypageScreen() {
             </View>
           ) : null}
         </View>
-        <RecoveryCodeCard horizontalGutter={0} />
       </View>
 
       <Modal
@@ -258,7 +235,7 @@ export default function MypageScreen() {
       </Modal>
 
       {gatheringId && gatheringName ? (
-        <View style={[styles.gatheringCard, shadow.sm, { backgroundColor: c.card, borderColor: c.border, marginHorizontal: horizontalGutter }]}>
+        <View style={[styles.gatheringCard, { backgroundColor: c.card, borderColor: c.border, marginHorizontal: horizontalGutter }]}>
           <Text style={[styles.gatheringLabel, { color: c.textSub }]}>내 모임</Text>
           <Text style={[styles.gatheringName, { color: c.text }]} numberOfLines={2}>
             {gatheringName}
@@ -295,15 +272,12 @@ export default function MypageScreen() {
               </TouchableOpacity>
             </>
           ) : null}
-          {isGatheringOwner && gatheringId && deviceId ? (
-            <GatheringInviteSettings gatheringId={gatheringId} deviceId={deviceId} />
-          ) : null}
         </View>
       ) : null}
 
       {role === 'leader' && !gatheringId ? (
         <TouchableOpacity
-          style={[styles.createGatheringRow, shadow.sm, { borderColor: c.accent, backgroundColor: c.card }]}
+          style={[styles.createGatheringRow, shadow.sm, { borderColor: c.accent, backgroundColor: c.card, marginHorizontal: horizontalGutter }]}
           onPress={() => router.push('/leader/gathering/create' as Href)}
           accessibilityRole="button"
         >
@@ -312,9 +286,9 @@ export default function MypageScreen() {
         </TouchableOpacity>
       ) : null}
 
-      <View style={styles.statsRow}>
+      <View style={[styles.statsRow, { paddingHorizontal: horizontalGutter }]}>
         <TouchableOpacity
-          style={[styles.stat, shadow.sm, { backgroundColor: c.card, borderColor: c.border }]}
+          style={[styles.stat, { backgroundColor: c.card, borderColor: c.border }]}
           onPress={() => router.push('/(tabs)/mypage/transcriptions')}
           activeOpacity={0.75}
           accessibilityRole="button"
@@ -324,23 +298,18 @@ export default function MypageScreen() {
           <Text style={[styles.statL, { color: c.textSub }]}>필사 곡</Text>
           <Text style={[styles.statTap, { color: c.accent }]}>목록 보기</Text>
         </TouchableOpacity>
-        <View style={[styles.stat, shadow.sm, { backgroundColor: c.card, borderColor: c.border }]}>
+        <View style={[styles.stat, { backgroundColor: c.card, borderColor: c.border }]}>
           <Text style={[styles.statN, { color: c.accent }]}>{stats?.worships ?? 0}</Text>
           <Text style={[styles.statL, { color: c.textSub }]}>예배</Text>
         </View>
-        <View style={[styles.stat, shadow.sm, { backgroundColor: c.card, borderColor: c.border }]}>
+        <View style={[styles.stat, { backgroundColor: c.card, borderColor: c.border }]}>
           <Text style={[styles.statN, { color: c.accent }]}>{stats?.uploads ?? 0}</Text>
           <Text style={[styles.statL, { color: c.textSub }]}>업로드</Text>
         </View>
       </View>
 
-      <View style={[styles.streak, shadow.md, { backgroundColor: palette.gold }]}>
-        <Text style={styles.streakTitle}>🔥 연속 필사</Text>
-        <Text style={styles.streakSub}>곧 기록됩니다</Text>
-      </View>
-
       <TouchableOpacity
-        style={[styles.linkRow, shadow.sm, { borderColor: c.border, backgroundColor: c.card }]}
+        style={[styles.linkRow, { borderColor: c.border, backgroundColor: c.card, marginHorizontal: horizontalGutter }]}
         onPress={() =>
           router.push({ pathname: '/(tabs)/gallery', params: { filter: 'mine' } })
         }
@@ -351,14 +320,14 @@ export default function MypageScreen() {
       </TouchableOpacity>
 
       {role === 'user' ? (
-        <TouchableOpacity style={[styles.leaderCard, shadow.sm, { borderColor: c.border, backgroundColor: c.card }]} onPress={becomeLeader}>
+        <TouchableOpacity style={[styles.leaderCard, shadow.sm, { borderColor: c.border, backgroundColor: c.card, marginHorizontal: horizontalGutter }]} onPress={becomeLeader}>
           <Text style={[styles.leaderTitle, { color: c.text }]}>👑 인도자로 전환</Text>
           <Text style={[styles.leaderSub, { color: c.textSub }]}>
             예배·찬양 만들기는 마이페이지에서만 할 수 있어요. 눌러 활성화합니다.
           </Text>
         </TouchableOpacity>
       ) : (
-        <View style={styles.leaderMenu}>
+        <View style={[styles.leaderMenu, { paddingHorizontal: horizontalGutter }]}>
           <View style={[styles.leaderMenuPanel, shadow.sm, { borderColor: c.border, backgroundColor: c.card }]}>
             <Text style={[styles.leaderPanelTitle, { color: c.text }]}>인도자 도구</Text>
             <Text style={[styles.leaderPanelSub, { color: c.textSub }]}>
@@ -444,7 +413,7 @@ export default function MypageScreen() {
             이름·날짜는 「정보 수정」, 곡 순서·특송은 「콘티 편집」에서 바꿀 수 있어요.
           </Text>
           {myWorshipsLoading ? (
-            <Text style={[styles.myWorshipHint, { color: c.textSub }]}>불러오는 중…</Text>
+            <LoadingSpinner compact />
           ) : (myWorships?.length ?? 0) === 0 ? (
             <Text style={[styles.myWorshipHint, { color: c.textSub }]}>
               {isNonOwnerLeader
@@ -495,42 +464,6 @@ export default function MypageScreen() {
           </TouchableOpacity>
         </View>
       )}
-
-      <View style={[styles.settingsSection, { marginHorizontal: horizontalGutter }]}>
-        <Text style={[styles.settingsLabel, { color: c.textSub }]}>설정</Text>
-        <TouchableOpacity
-          style={[styles.feedbackRow, shadow.sm, { borderColor: c.border, backgroundColor: c.card }]}
-          onPress={() => {
-            void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-            void Linking.openURL(FEEDBACK_URL);
-          }}
-          activeOpacity={0.75}
-          accessibilityRole="button"
-          accessibilityLabel="피드백 보내기"
-        >
-          <View style={[styles.feedbackIcon, { backgroundColor: c.accentMuted }]}>
-            <Feather name="message-circle" size={20} color={c.accent} />
-          </View>
-          <View style={styles.feedbackTextCol}>
-            <Text style={[styles.feedbackTitle, { color: c.text }]}>피드백 보내기</Text>
-            <Text style={[styles.feedbackSub, { color: c.textSub }]}>
-              불편한 점이나 개선 아이디어를 알려주세요
-            </Text>
-          </View>
-          <Feather name="chevron-right" size={20} color={c.textSub} />
-        </TouchableOpacity>
-      </View>
-
-      <TouchableOpacity
-        style={[styles.logoutRow, { borderColor: c.border, backgroundColor: c.card }]}
-        onPress={confirmLogout}
-        activeOpacity={0.75}
-        accessibilityRole="button"
-        accessibilityLabel="로그아웃"
-      >
-        <Feather name="log-out" size={18} color={c.textSub} />
-        <Text style={[styles.logoutText, { color: c.textSub }]}>로그아웃</Text>
-      </TouchableOpacity>
     </ScrollView>
   );
 }
@@ -544,7 +477,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: spacing.xl,
     paddingHorizontal: spacing.lg,
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
     marginTop: spacing.sm,
   },
@@ -561,15 +494,6 @@ const styles = StyleSheet.create({
     ...typeface.sansMedium,
     fontSize: fontSize.sm,
   },
-  avatar: {
-    width: 72,
-    height: 72,
-    borderRadius: 36,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 12,
-  },
-  avatarText: { ...typeface.sansMedium, fontSize: 28 },
   nameEditRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -609,7 +533,7 @@ const styles = StyleSheet.create({
   gatheringCard: {
     marginTop: 0,
     padding: 18,
-    borderRadius: radius.xl,
+    borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
   },
   gatheringLabel: { ...typeface.sans, fontSize: fontSize.xs, marginBottom: 4 },
@@ -635,17 +559,16 @@ const styles = StyleSheet.create({
   },
   shareInviteText: { ...typeface.sansMedium, fontSize: fontSize.sm },
   createGatheringRow: {
-    marginHorizontal: 16,
-    marginTop: 12,
+    marginTop: spacing.md,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
+    padding: spacing.lg,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   createGatheringText: { ...typeface.sansMedium, fontSize: fontSize.md, flex: 1, marginRight: 8 },
-  statsRow: { flexDirection: 'row', gap: 10, paddingHorizontal: 16, marginTop: 12 },
+  statsRow: { flexDirection: 'row', gap: 10, marginTop: spacing.md },
   stat: {
     flex: 1,
     borderRadius: radius.lg,
@@ -656,65 +579,28 @@ const styles = StyleSheet.create({
   statN: { ...typeface.serifBold, fontSize: fontSize.xl },
   statL: { ...typeface.sans, fontSize: fontSize.xs, marginTop: 4 },
   statTap: { ...typeface.sansMedium, fontSize: 10, marginTop: 6 },
-  streak: {
-    marginHorizontal: 16,
-    marginTop: 20,
-    borderRadius: 14,
-    padding: 16,
-  },
-  streakTitle: { ...typeface.sansMedium, fontSize: fontSize.md, color: '#1a160e' },
-  streakSub: { ...typeface.sans, fontSize: fontSize.sm, color: '#4a3f2f', marginTop: 4 },
   linkRow: {
-    marginHorizontal: 16,
-    marginTop: 16,
+    marginTop: spacing.lg,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  linkText: { ...typeface.sansMedium, fontSize: fontSize.md },
-  settingsSection: {
-    marginTop: spacing.lg,
-  },
-  settingsLabel: {
-    ...typeface.sansMedium,
-    fontSize: fontSize.xs,
-    letterSpacing: 0.6,
-    textTransform: 'uppercase',
-    marginBottom: 10,
-  },
-  feedbackRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 16,
+    padding: spacing.lg,
     borderRadius: radius.lg,
     borderWidth: StyleSheet.hairlineWidth,
-    gap: 12,
   },
-  feedbackIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  feedbackTextCol: { flex: 1 },
-  feedbackTitle: { ...typeface.sansMedium, fontSize: fontSize.md },
-  feedbackSub: { ...typeface.sans, fontSize: fontSize.sm, marginTop: 4, lineHeight: 19 },
+  linkText: { ...typeface.sansMedium, fontSize: fontSize.md },
   leaderCard: {
-    margin: 16,
-    padding: 20,
-    borderRadius: 14,
-    borderWidth: 1,
+    marginTop: spacing.lg,
+    padding: spacing.xl,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   leaderTitle: { ...typeface.sansMedium, fontSize: fontSize.md },
   leaderSub: { ...typeface.sans, fontSize: fontSize.sm, marginTop: 6 },
-  leaderMenu: { paddingHorizontal: 16, marginTop: 20 },
+  leaderMenu: { marginTop: spacing.xl },
   leaderMenuPanel: {
-    borderRadius: 16,
-    borderWidth: 1,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
     padding: 18,
     marginBottom: 8,
   },
@@ -745,13 +631,13 @@ const styles = StyleSheet.create({
     marginTop: 12,
     paddingVertical: 14,
     paddingHorizontal: 14,
-    borderRadius: 14,
-    borderWidth: 1,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
   },
   leaderActionIcon: {
     width: 48,
     height: 48,
-    borderRadius: 14,
+    borderRadius: radius.lg,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -767,10 +653,10 @@ const styles = StyleSheet.create({
   },
   myWorshipHint: { ...typeface.sans, fontSize: fontSize.sm, marginBottom: 12, lineHeight: 20 },
   myWorshipCard: {
-    borderRadius: 14,
-    borderWidth: 1,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: radius.lg,
+    borderWidth: StyleSheet.hairlineWidth,
+    padding: spacing.lg,
+    marginBottom: spacing.md,
   },
   myWorshipName: { ...typeface.serifBold, fontSize: fontSize.md, marginTop: 6, lineHeight: 24 },
   myWorshipDate: { ...typeface.mono, fontSize: fontSize.xs },
@@ -780,23 +666,10 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 12,
     paddingHorizontal: 8,
-    borderRadius: 12,
-    borderWidth: 1,
+    borderRadius: radius.md,
+    borderWidth: StyleSheet.hairlineWidth,
     alignItems: 'center',
   },
   myWorshipBtnLabel: { ...typeface.sans, fontSize: fontSize.xs, marginBottom: 2 },
   myWorshipBtnText: { ...typeface.sansMedium, fontSize: fontSize.sm },
-  logoutRow: {
-    marginHorizontal: 16,
-    marginTop: 28,
-    marginBottom: 8,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    paddingVertical: 14,
-    borderRadius: 12,
-    borderWidth: 1,
-  },
-  logoutText: { ...typeface.sansMedium, fontSize: fontSize.sm },
 });

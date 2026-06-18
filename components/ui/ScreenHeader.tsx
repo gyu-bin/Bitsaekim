@@ -1,8 +1,8 @@
 import { StyleSheet, Text, View, type ViewStyle } from 'react-native';
 
 import { IconButton } from '@/components/ui/IconButton';
-import { radius, spacing } from '@/constants/colors';
-import { fontSize, typeface } from '@/constants/fonts';
+import { spacing } from '@/constants/colors';
+import { typography } from '@/constants/fonts';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { useThemeStore } from '@/stores/themeStore';
 
@@ -34,20 +34,11 @@ export function ScreenHeader({
       <View style={styles.topRow}>
         <View style={styles.textCol}>
           {badge ? (
-            <View style={[styles.badge, { backgroundColor: c.accentMuted }]}>
-              <Text style={[styles.badgeText, { color: c.accentDark }]} numberOfLines={1}>
-                {badge}
-              </Text>
-            </View>
+            <Text style={[styles.badge, { color: c.textSub }]} numberOfLines={1}>
+              {badge}
+            </Text>
           ) : null}
-          <Text
-            style={[
-              large ? styles.titleLarge : styles.title,
-              { color: c.text },
-            ]}
-          >
-            {title}
-          </Text>
+          <Text style={[large ? styles.titleLarge : styles.title, { color: c.text }]}>{title}</Text>
           {subtitle ? (
             <Text style={[styles.subtitle, { color: c.textSub }]}>{subtitle}</Text>
           ) : null}
@@ -59,6 +50,7 @@ export function ScreenHeader({
               icon={isDark ? 'sun' : 'moon'}
               accessibilityLabel="다크 모드 전환"
               onPress={toggleDark}
+              variant="ghost"
             />
           ) : null}
         </View>
@@ -79,32 +71,15 @@ const styles = StyleSheet.create({
     gap: spacing.md,
   },
   textCol: { flex: 1, minWidth: 0 },
-  titleLarge: {
-    ...typeface.sansMedium,
-    fontSize: fontSize['3xl'],
-    letterSpacing: -0.6,
-    lineHeight: 38,
-  },
-  title: {
-    ...typeface.sansMedium,
-    fontSize: fontSize['2xl'],
-    letterSpacing: -0.4,
-  },
-  subtitle: {
-    ...typeface.sans,
-    fontSize: fontSize.sm,
-    lineHeight: 20,
-    marginTop: 6,
-    maxWidth: 320,
-  },
+  titleLarge: { ...typography.screenTitle },
+  title: { ...typography.screenTitle, fontSize: 28, lineHeight: 34 },
+  subtitle: { ...typography.screenSubtitle, marginTop: 8, maxWidth: 320 },
   badge: {
     alignSelf: 'flex-start',
-    marginBottom: 8,
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: radius.full,
+    marginBottom: 6,
+    ...typography.chip,
+    fontSize: 12,
     maxWidth: '100%',
   },
-  badgeText: { ...typeface.sansMedium, fontSize: fontSize.xs },
-  actions: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 2 },
+  actions: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingTop: 4 },
 });
