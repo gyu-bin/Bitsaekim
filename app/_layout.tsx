@@ -72,7 +72,7 @@ function useRootNavigationLogic(enabled: boolean) {
     ) {
       router.replace('/join-gathering' as Href);
     } else if (isOnboarded && gatheringId && (inOnboarding || inJoinGathering || inJoinDeepLink)) {
-      router.replace('/(tabs)/transcribe');
+      router.replace('/(tabs)');
     }
   }, [enabled, gatheringId, isOnboarded, router, segments]);
 }

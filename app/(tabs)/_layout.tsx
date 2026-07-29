@@ -15,7 +15,14 @@ export default function TabLayout() {
           tabBarShowLabel: false,
         }}
       >
-        <Tabs.Screen name="index" options={{ href: null, title: '시작' }} />
+        <Tabs.Screen
+          name="index"
+          options={{
+            title: '홈',
+            tabBarLabel: '홈',
+            tabBarAccessibilityLabel: '홈 탭',
+          }}
+        />
         <Tabs.Screen
           name="transcribe"
           options={{

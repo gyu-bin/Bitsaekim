@@ -52,6 +52,59 @@ export const palette = {
   white: '#ffffff',
 } as const;
 
+/**
+ * 게임화(정원) 화면용 파스텔 팔레트 — 마스코트 "새싹이" 톤과 맞춘 별도 토큰.
+ * 기존 미니멀 `colors`는 그대로 두고, 홈·정원·나눔 리디자인 화면에서만 사용한다.
+ */
+export const garden = {
+  light: {
+    cream: '#FBF4E4',
+    cream2: '#F5EAD2',
+    card: '#FFFFFF',
+    line: '#EADFC7',
+    ink: '#4A3F30',
+    inkSoft: '#7A6C56',
+    muted: '#A99A80',
+    green: '#7DB56A',
+    greenSoft: '#C9E4B4',
+    greenBg: '#EAF5E1',
+    greenInk: '#3F6B2C',
+    coral: '#F08A7C',
+    coralBg: '#FBE3DE',
+    coralInk: '#B04A3E',
+    gold: '#C79A54',
+    goldBg: '#F6ECD6',
+    goldInk: '#8A6530',
+    skyTop: '#CDE8F2',
+    grass: '#B9D98C',
+    grass2: '#A6CE78',
+  },
+  dark: {
+    cream: '#1C1A14',
+    cream2: '#2A2519',
+    card: '#26221A',
+    line: '#3A3327',
+    ink: '#F0E7D4',
+    inkSoft: '#C9BCA2',
+    muted: '#A99A80',
+    green: '#8FC57A',
+    greenSoft: '#3A5230',
+    greenBg: '#26311F',
+    greenInk: '#A6D48C',
+    coral: '#F0A08C',
+    coralBg: '#3A2823',
+    coralInk: '#F0B4A6',
+    gold: '#D4A96A',
+    goldBg: '#332A1A',
+    goldInk: '#E8C992',
+    skyTop: '#2C3A46',
+    grass: '#3E5230',
+    grass2: '#4C6138',
+  },
+} as const;
+
+export type GardenColors = { [K in keyof (typeof garden)['light']]: string };
+
 export const radius = {
   sm: 8,
   md: 12,

@@ -16,12 +16,13 @@ import { TAB_BAR_CONTENT_HEIGHT } from '@/constants/tabBar';
 import { useThemeColors } from '@/hooks/useThemeColors';
 
 const TAB_ICONS: Record<string, React.ComponentProps<typeof Feather>['name']> = {
+  index: 'home',
   transcribe: 'edit-3',
   gallery: 'image',
   mypage: 'user',
 };
 
-const HIDDEN_TABS = new Set(['index']);
+const HIDDEN_TABS = new Set<string>([]);
 
 const SPRING = { damping: 20, stiffness: 280, mass: 0.7 };
 
