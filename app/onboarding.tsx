@@ -41,7 +41,7 @@ import {
 import { useUserStore } from '@/stores/userStore';
 import { showToast } from '@/stores/toastStore';
 
-type Flow = 'join' | 'create' | 'recover';
+type Flow = 'solo' | 'join' | 'create' | 'recover';
 
 type RpcJoinRow = {
   gathering_id: string;
@@ -63,7 +63,7 @@ export default function OnboardingScreen() {
   const nameRef = useRef('');
   const gatheringNameRef = useRef('');
   const prevHasRef = useRef(false);
-  const [flow, setFlow] = useState<Flow>('join');
+  const [flow, setFlow] = useState<Flow>('solo');
   const [inviteCode, setInviteCode] = useState('');
   const [recoveryCode, setRecoveryCode] = useState('');
   const [canStart, setCanStart] = useState(false);
@@ -128,9 +128,11 @@ export default function OnboardingScreen() {
     }
     const hasName = nameRef.current.trim().length > 0;
     const extra =
-      flow === 'join'
-        ? inviteCode.trim().length > 0
-        : gatheringNameRef.current.trim().length > 0;
+      flow === 'solo'
+        ? true
+        : flow === 'join'
+          ? inviteCode.trim().length > 0
+          : gatheringNameRef.current.trim().length > 0;
     requestAnimationFrame(() => {
       requestAnimationFrame(() => setCanStart(hasName && extra));
     });
@@ -202,11 +204,7 @@ export default function OnboardingScreen() {
     setBusy(true);
     try {
       await applyRestoredSession(existingSession);
-      if (existingSession.gathering) {
-        router.replace('/(tabs)/transcribe');
-      } else {
-        router.replace('/join-gathering');
-      }
+      router.replace('/(tabs)');
     } catch (e) {
       Alert.alert('오류', formatSupabaseNetworkError(e));
     } finally {
@@ -230,12 +228,7 @@ export default function OnboardingScreen() {
         return;
       }
       await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
-      const gatheringId = useUserStore.getState().gatheringId;
-      if (gatheringId) {
-        router.replace('/(tabs)/transcribe');
-      } else {
-        router.replace('/join-gathering');
-      }
+      router.replace('/(tabs)');
     } catch {
       showToast('코드를 다시 확인해 주세요', 'error');
     } finally {
@@ -253,6 +246,16 @@ export default function OnboardingScreen() {
     setBusy(true);
     try {
       const deviceId = await getDeviceId();
+
+      if (flow === 'solo') {
+        const registered = await registerUserForDevice(deviceId, name, 'user');
+        useUserStore.getState().setUser(deviceId, registered.name, 'user');
+        useUserStore.getState().setRole('user');
+        await rememberRegisteredDeviceId(deviceId);
+        useUserStore.getState().setOnboarded();
+        router.replace('/(tabs)');
+        return;
+      }
 
       if (flow === 'join') {
         const code = inviteCode.trim().toUpperCase().replace(/\s/g, '');
@@ -277,7 +280,7 @@ export default function OnboardingScreen() {
           row.created_by ?? null
         );
         useUserStore.getState().setOnboarded();
-        router.replace('/(tabs)/transcribe');
+        router.replace('/(tabs)');
       } else {
         const gname = gatheringNameRef.current.trim();
         if (!gname) return;
@@ -314,7 +317,7 @@ export default function OnboardingScreen() {
                 message: `${row.name} 모임에 초대합니다.\n코드: ${row.invite_code}\n\n앱에서 열기: ${inviteUrl}`,
               }),
           },
-          { text: '시작하기', onPress: () => router.replace('/(tabs)/transcribe') },
+          { text: '시작하기', onPress: () => router.replace('/(tabs)') },
         ]);
       }
     } catch (e) {
@@ -345,6 +348,12 @@ export default function OnboardingScreen() {
   const flowToggle = (
     <View style={styles.flowRow}>
       <Pressable
+        onPress={() => setFlow('solo')}
+        style={[styles.flowChip, flow === 'solo' && styles.flowChipOn]}
+      >
+        <Text style={[styles.flowChipText, flow === 'solo' && styles.flowChipTextOn]}>혼자 시작</Text>
+      </Pressable>
+      <Pressable
         onPress={() => setFlow('join')}
         style={[styles.flowChip, flow === 'join' && styles.flowChipOn]}
       >
@@ -355,7 +364,7 @@ export default function OnboardingScreen() {
         style={[styles.flowChip, flow === 'create' && styles.flowChipOn]}
       >
         <Text style={[styles.flowChipText, flow === 'create' && styles.flowChipTextOn]}>
-          인도자 — 모임 열기
+          모임 열기
         </Text>
       </Pressable>
       <Pressable
@@ -363,7 +372,7 @@ export default function OnboardingScreen() {
         style={[styles.flowChip, flow === 'recover' && styles.flowChipOn]}
       >
         <Text style={[styles.flowChipText, flow === 'recover' && styles.flowChipTextOn]}>
-          다른 기기에서 이어하기
+          이어하기
         </Text>
       </Pressable>
     </View>
@@ -387,7 +396,7 @@ export default function OnboardingScreen() {
           <Text style={styles.existingSub}>
             {existingSession.gathering
               ? `모임 · ${existingSession.gathering.name}`
-              : '가입은 되어 있어요. 모임에 다시 들어가면 됩니다.'}
+              : '가입은 되어 있어요. 혼자 쓰거나, 나중에 모임에 들어갈 수 있어요.'}
           </Text>
           <Button
             title="이어서 시작하기"
@@ -475,7 +484,11 @@ export default function OnboardingScreen() {
         />
       )}
 
-      {flow === 'join' ? (
+      {flow === 'solo' ? (
+        <Text style={styles.hint}>
+          이름만 입력하면 바로 필사를 시작할 수 있어요. 모임은 나중에 마이페이지에서 참여하거나 만들 수 있습니다.
+        </Text>
+      ) : flow === 'join' ? (
         <>
           <Text style={styles.fieldLabel}>모임 초대 코드</Text>
           <TextInput
@@ -531,7 +544,13 @@ export default function OnboardingScreen() {
       )}
 
       <Button
-        title={flow === 'join' ? '모임에 참여하고 시작' : '모임 만들고 시작'}
+        title={
+          flow === 'solo'
+            ? '시작하기'
+            : flow === 'join'
+              ? '모임에 참여하고 시작'
+              : '모임 만들고 시작'
+        }
         onPress={() => void handleStart()}
         loading={busy}
         disabled={!canStart || busy}

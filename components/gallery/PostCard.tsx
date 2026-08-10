@@ -18,7 +18,7 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { LikeButton } from '@/components/gallery/LikeButton';
+import { ReactionBar } from '@/components/gallery/ReactionBar';
 import {
   GalleryPostThumb,
   GALLERY_THUMB_ASPECT,
@@ -542,10 +542,10 @@ function PostCardInner({ post, thumbWidth }: PostCardProps) {
               )}
 
               <View style={[styles.detailFooter, { borderTopColor: c.border }]}>
-                <LikeButton
+                <ReactionBar
                   postId={post.id}
-                  initialCount={post.likes_count ?? 0}
-                  initialLiked={post.is_liked ?? false}
+                  initialCounts={post.reactions}
+                  initialMine={post.my_reactions}
                 />
                 <Text style={[styles.date, { color: c.textSub }]}>
                   {formatCreatedAt(post.created_at)}
@@ -557,10 +557,11 @@ function PostCardInner({ post, thumbWidth }: PostCardProps) {
       </Modal>
 
       <View style={styles.footer}>
-        <LikeButton
+        <ReactionBar
           postId={post.id}
-          initialCount={post.likes_count ?? 0}
-          initialLiked={post.is_liked ?? false}
+          initialCounts={post.reactions}
+          initialMine={post.my_reactions}
+          compact
         />
         <Text style={[styles.date, { color: c.textSub }]}>{formatCreatedAt(post.created_at)}</Text>
       </View>
@@ -580,6 +581,8 @@ function postCardPropsEqual(prev: PostCardProps, next: PostCardProps) {
     a.link_url === b.link_url &&
     a.likes_count === b.likes_count &&
     a.is_liked === b.is_liked &&
+    JSON.stringify(a.reactions) === JSON.stringify(b.reactions) &&
+    JSON.stringify(a.my_reactions) === JSON.stringify(b.my_reactions) &&
     a.user?.name === b.user?.name &&
     a.user?.avatar_url === b.user?.avatar_url &&
     a.device_id === b.device_id &&

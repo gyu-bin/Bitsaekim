@@ -151,7 +151,7 @@ export default function MypageScreen() {
       <View style={[styles.profileSection, { paddingTop: insets.top + spacing.sm, paddingHorizontal: horizontalGutter }]}>
         <ScreenHeader
           title="마이"
-          subtitle={gatheringName ?? '모임에 참여해 주세요'}
+          subtitle={gatheringName ?? '혼자 쓰는 중 · 모임은 선택'}
           rightAction={
             <IconButton
               icon="settings"
@@ -283,6 +283,18 @@ export default function MypageScreen() {
         >
           <Text style={[styles.createGatheringText, { color: c.accent }]}>모임 만들기 (초대 코드 발급)</Text>
           <Feather name="chevron-right" size={20} color={c.accent} />
+        </TouchableOpacity>
+      ) : null}
+
+      {!gatheringId ? (
+        <TouchableOpacity
+          style={[styles.createGatheringRow, shadow.sm, { borderColor: c.border, backgroundColor: c.card, marginHorizontal: horizontalGutter }]}
+          onPress={() => router.push('/join-gathering' as Href)}
+          accessibilityRole="button"
+          accessibilityLabel="모임 참여"
+        >
+          <Text style={[styles.createGatheringText, { color: c.text }]}>모임 코드로 참여</Text>
+          <Feather name="chevron-right" size={20} color={c.textSub} />
         </TouchableOpacity>
       ) : null}
 

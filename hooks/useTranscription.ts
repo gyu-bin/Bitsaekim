@@ -6,7 +6,7 @@ import type { TranscribeMode } from '@/types';
 
 export type MyTranscriptionRow = {
   id: string;
-  worship_id: string;
+  worship_id: string | null;
   song_id: string;
   mode: TranscribeMode;
   completed_at: string;
@@ -108,7 +108,7 @@ function mapTranscriptionRaw(raw: Record<string, unknown>): MyTranscriptionRow {
   const worship = raw.worship;
   return {
     id: raw.id as string,
-    worship_id: raw.worship_id as string,
+    worship_id: (raw.worship_id as string | null) ?? null,
     song_id: raw.song_id as string,
     mode: raw.mode as TranscribeMode,
     completed_at: raw.completed_at as string,
@@ -157,28 +157,29 @@ export type MyGalleryPostRow = {
 
 /** 내 나눔 중 해당 예배·곡과 맞는 글 (최신순) */
 export function useMyGalleryPostsForWorshipSong(
-  worshipId: string | undefined,
+  worshipId: string | null | undefined,
   songId: string | undefined,
   enabled: boolean
 ) {
   const deviceId = useUserStore((s) => s.deviceId);
 
   return useQuery({
-    queryKey: ['gallery-mine-for-song', deviceId, worshipId, songId],
+    queryKey: ['gallery-mine-for-song', deviceId, worshipId ?? 'none', songId],
     queryFn: async () => {
-      if (!deviceId || !worshipId || !songId) return [] as MyGalleryPostRow[];
-      const { data, error } = await supabase
+      if (!deviceId || !songId) return [] as MyGalleryPostRow[];
+      let q = supabase
         .from('gallery_posts')
         .select('id, image_url, body, created_at')
         .eq('device_id', deviceId)
-        .eq('worship_id', worshipId)
         .eq('song_id', songId)
         .order('created_at', { ascending: false })
         .limit(12);
+      q = worshipId ? q.eq('worship_id', worshipId) : q.is('worship_id', null);
+      const { data, error } = await q;
       if (error) throw error;
       return (data ?? []) as MyGalleryPostRow[];
     },
-    enabled: enabled && !!deviceId && !!worshipId && !!songId,
+    enabled: enabled && !!deviceId && !!songId,
   });
 }
 
@@ -218,7 +219,7 @@ export function useRecordTranscription() {
 
   return useMutation({
     mutationFn: async (payload: {
-      worshipId: string;
+      worshipId: string | null;
       songId: string;
       mode: TranscribeMode;
     }) => {
@@ -236,6 +237,7 @@ export function useRecordTranscription() {
       qc.invalidateQueries({ queryKey: ['transcription-list'] });
       qc.invalidateQueries({ queryKey: ['transcription-counts-by-worship'] });
       qc.invalidateQueries({ queryKey: ['transcriptions-for-worship'] });
+      qc.invalidateQueries({ queryKey: ['home-summary'] });
     },
   });
 }

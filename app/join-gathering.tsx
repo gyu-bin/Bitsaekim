@@ -85,10 +85,14 @@ export default function JoinGatheringScreen() {
         row.invite_code,
         row.created_by ?? null
       );
-      router.replace('/(tabs)/transcribe');
+      router.replace('/(tabs)');
     } finally {
       setBusy(false);
     }
+  };
+
+  const skipForNow = () => {
+    router.replace('/(tabs)' as Href);
   };
 
   const goCreateGathering = async () => {
@@ -172,6 +176,16 @@ export default function JoinGatheringScreen() {
         <Text style={styles.hintSmall}>
           코드로 들어오거나, 직접 모임을 열어 초대 코드를 나눌 수 있어요. 새 모임은 이 기기가 모임장이 됩니다.
         </Text>
+
+        <Pressable
+          onPress={skipForNow}
+          disabled={busy || createBusy}
+          style={({ pressed }) => [styles.skipBtn, pressed && { opacity: 0.7 }]}
+          accessibilityRole="button"
+          accessibilityLabel="나중에 하기"
+        >
+          <Text style={styles.skipText}>나중에 하기 — 혼자 쓰기</Text>
+        </Pressable>
       </View>
     </KeyboardAvoidingView>
   );
@@ -260,5 +274,16 @@ const styles = StyleSheet.create({
     lineHeight: 18,
     marginTop: 16,
     textAlign: 'center',
+  },
+  skipBtn: {
+    marginTop: 28,
+    alignItems: 'center',
+    paddingVertical: 12,
+  },
+  skipText: {
+    ...typeface.sans,
+    fontSize: fontSize.sm,
+    color: 'rgba(255,255,255,0.55)',
+    textDecorationLine: 'underline',
   },
 });

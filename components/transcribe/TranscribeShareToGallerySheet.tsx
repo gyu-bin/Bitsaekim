@@ -26,7 +26,7 @@ import { useUserStore } from '@/stores/userStore';
 type Props = {
   visible: boolean;
   imageUri: string | null;
-  worshipId: string | undefined;
+  worshipId: string | null | undefined;
   songId: string | undefined;
   songTitle?: string;
   /** 필사 완료 직후 사진 보관함에 자동 저장된 경우 */
@@ -78,8 +78,8 @@ export function TranscribeShareToGallerySheet({
   }, [deleteTemp, imageUri, onClose]);
 
   const handlePost = useCallback(async () => {
-    if (!imageUri || !worshipId || !songId || !deviceId) {
-      Alert.alert('알림', '나눔을 올리려면 예배·곡 정보와 기기 정보가 필요해요.');
+    if (!imageUri || !songId || !deviceId) {
+      Alert.alert('알림', '나눔을 올리려면 곡 정보와 기기 정보가 필요해요.');
       return;
     }
     setBusy(true);
@@ -97,7 +97,7 @@ export function TranscribeShareToGallerySheet({
       } else {
         const result = await insertGalleryPostWithLocalImage({
           deviceId,
-          worshipId,
+          worshipId: worshipId ?? null,
           songId,
           localFileUri: toFileUri(imageUri),
           body,

@@ -13,7 +13,7 @@ import {
 import { ThemeProvider } from '@react-navigation/native';
 import { QueryClientProvider } from '@tanstack/react-query';
 import { useFonts } from 'expo-font';
-import { Stack, useRouter, useSegments, type Href } from 'expo-router';
+import { Stack, useRouter, useSegments } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect, useState } from 'react';
 import { InteractionManager } from 'react-native';
@@ -58,20 +58,13 @@ function useRootNavigationLogic(enabled: boolean) {
     const inOnboarding = root === 'onboarding';
     const inJoinGathering = String(segments[0] ?? '') === 'join-gathering';
     const inJoinDeepLink = String(segments[0] ?? '') === 'join';
-    /** 모임 없을 때 새 모임 만들기 등 `leader/*` 로 들어온 경우 join 화면으로 덮어쓰지 않음 */
-    const inLeader = root === 'leader';
 
+    // 모임은 선택적 — gatheringId 없어도 홈/(tabs) 진입 허용
     if (!isOnboarded && !inOnboarding && !inJoinDeepLink) {
       router.replace('/onboarding');
-    } else if (
-      isOnboarded &&
-      !gatheringId &&
-      !inJoinGathering &&
-      !inJoinDeepLink &&
-      !inLeader
-    ) {
-      router.replace('/join-gathering' as Href);
     } else if (isOnboarded && gatheringId && (inOnboarding || inJoinGathering || inJoinDeepLink)) {
+      router.replace('/(tabs)');
+    } else if (isOnboarded && !gatheringId && inOnboarding) {
       router.replace('/(tabs)');
     }
   }, [enabled, gatheringId, isOnboarded, router, segments]);
@@ -156,6 +149,8 @@ function RootStack() {
       <Stack.Screen name="join/[inviteCode]" />
       <Stack.Screen name="(tabs)" />
       <Stack.Screen name="leader" />
+      <Stack.Screen name="village" />
+      <Stack.Screen name="resources" />
       <Stack.Screen name="+not-found" />
     </Stack>
   );

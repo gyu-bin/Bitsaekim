@@ -125,18 +125,21 @@ export type Database = {
         Row: {
           created_at: string | null
           device_id: string | null
+          emoji: string
           id: string
           post_id: string | null
         }
         Insert: {
           created_at?: string | null
           device_id?: string | null
+          emoji?: string
           id?: string
           post_id?: string | null
         }
         Update: {
           created_at?: string | null
           device_id?: string | null
+          emoji?: string
           id?: string
           post_id?: string | null
         }
@@ -251,6 +254,36 @@ export type Database = {
             referencedColumns: ["device_id"]
           },
         ]
+      }
+      daily_activities: {
+        Row: {
+          id: string
+          device_id: string
+          gathering_id: string | null
+          activity_date: string
+          type: string
+          ref_id: string | null
+          created_at: string | null
+        }
+        Insert: {
+          id?: string
+          device_id: string
+          gathering_id?: string | null
+          activity_date: string
+          type: string
+          ref_id?: string | null
+          created_at?: string | null
+        }
+        Update: {
+          id?: string
+          device_id?: string
+          gathering_id?: string | null
+          activity_date?: string
+          type?: string
+          ref_id?: string | null
+          created_at?: string | null
+        }
+        Relationships: []
       }
       transcriptions: {
         Row: {
@@ -428,9 +461,67 @@ export type Database = {
           p_device_id: string
           p_mode: string
           p_song_id: string
-          p_worship_id: string
+          p_worship_id: string | null
         }
         Returns: boolean
+      }
+      get_home_summary: {
+        Args: { p_device_id: string; p_week_start: string }
+        Returns: {
+          streak: number
+          points: number
+          week_done_dates: string[]
+        }[]
+      }
+      list_song_sheets: {
+        Args: { p_song_id: string; p_gathering_id?: string | null }
+        Returns: {
+          id: string
+          song_id: string
+          gathering_id: string | null
+          uploaded_by: string | null
+          image_url: string
+          page_index: number
+          created_at: string
+        }[]
+      }
+      insert_song_sheet_for_device: {
+        Args: {
+          p_device_id: string
+          p_song_id: string
+          p_gathering_id: string | null
+          p_image_url: string
+          p_page_index?: number
+        }
+        Returns: string
+      }
+      delete_song_sheet_for_device: {
+        Args: { p_device_id: string; p_sheet_id: string }
+        Returns: boolean
+      }
+      list_songs_with_sheets: {
+        Args: { p_gathering_id?: string | null }
+        Returns: {
+          song_id: string
+          title: string
+          artist: string | null
+          sheet_count: number
+        }[]
+      }
+      toggle_reaction: {
+        Args: { p_device_id: string; p_post_id: string; p_emoji?: string }
+        Returns: { active: boolean; emoji: string; count: number }[]
+      }
+      list_gathering_members_summary: {
+        Args: { p_device_id: string; p_gathering_id: string }
+        Returns: {
+          device_id: string
+          name: string
+          avatar_url: string | null
+          joined_at: string
+          activity_days: number
+          points: number
+        }[]
       }
       set_config: {
         Args: { p_key: string; p_value: string }

@@ -12,11 +12,13 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { HandwritingCanvas } from '@/components/transcribe/HandwritingCanvas';
 import { TranscribeShareToGallerySheet } from '@/components/transcribe/TranscribeShareToGallerySheet';
 import { LyricsPanel } from '@/components/transcribe/LyricsPanel';
+import { SongSheetInline, SongSheetViewer } from '@/components/transcribe/SongSheetViewer';
 import { TypingCanvas } from '@/components/transcribe/TypingCanvas';
 import { Button } from '@/components/ui/Button';
 import { LoadingSpinner } from '@/components/ui/LoadingSpinner';
 import { fontSize, typeface } from '@/constants/fonts';
 import { useRecordTranscription } from '@/hooks/useTranscription';
+import { useSongSheets } from '@/hooks/useSongSheets';
 import { useThemeColors } from '@/hooks/useThemeColors';
 import { insertGalleryPostWithLocalImage } from '@/lib/galleryInsert';
 import { refreshGalleryCache } from '@/lib/galleryQuery';
@@ -45,13 +47,13 @@ export default function WriteSongScreen() {
   const { songId: songIdRaw, worshipId: worshipIdRaw, mode: modeRaw, queue: queueRaw } =
     useLocalSearchParams<{
       songId: string;
-      worshipId: string;
+      worshipId?: string;
       mode: TranscribeMode;
       queue?: string;
     }>();
 
   const songId = normalizeParam(songIdRaw);
-  const worshipId = normalizeParam(worshipIdRaw);
+  const worshipId = normalizeParam(worshipIdRaw) ?? null;
   const modeParam = normalizeParam(modeRaw);
   const queueParam = normalizeParam(queueRaw);
 
@@ -99,6 +101,10 @@ export default function WriteSongScreen() {
   const [shareToGalleryAlbumSaved, setShareToGalleryAlbumSaved] = useState(false);
   /** 필사 완료 직후 자동 업로드된 나눔 글 id (시트에서 묵상만 갱신) */
   const [autoGalleryPostId, setAutoGalleryPostId] = useState<string | null>(null);
+  const [sourceTab, setSourceTab] = useState<'lyrics' | 'sheet'>('lyrics');
+  const [sheetViewerOpen, setSheetViewerOpen] = useState(false);
+  const { data: sheets = [] } = useSongSheets(songId);
+  const hasSheets = sheets.length > 0;
 
   useEffect(() => {
     setVerseIndex(0);
@@ -256,11 +262,11 @@ export default function WriteSongScreen() {
   );
 
   const goNext = useCallback(async () => {
-    if (verseIndex < total - 1) {
+    if (total > 0 && verseIndex < total - 1) {
       setVerseIndex((i) => i + 1);
       return;
     }
-    if (!songId || !worshipId) return;
+    if (!songId) return;
     setSaving(true);
     let completionCaptureUri: string | null = null;
     try {
@@ -289,13 +295,7 @@ export default function WriteSongScreen() {
       }
 
       let autoPostedId: string | null = null;
-      if (
-        completionCaptureUri &&
-        Platform.OS !== 'web' &&
-        deviceId &&
-        worshipId &&
-        songId
-      ) {
+      if (completionCaptureUri && Platform.OS !== 'web' && deviceId && songId) {
         const autoRes = await insertGalleryPostWithLocalImage({
           deviceId,
           worshipId,
@@ -307,7 +307,9 @@ export default function WriteSongScreen() {
           autoPostedId = autoRes.postId;
           await refreshGalleryCache(qc);
           await qc.invalidateQueries({ queryKey: ['transcription-stats'] });
-          await qc.invalidateQueries({ queryKey: ['gallery-mine-for-song', deviceId, worshipId, songId] });
+          await qc.invalidateQueries({
+            queryKey: ['gallery-mine-for-song', deviceId, worshipId, songId],
+          });
         }
       }
       setAutoGalleryPostId(autoPostedId);
@@ -370,6 +372,7 @@ export default function WriteSongScreen() {
     showCompleteAlert,
     goNextSongInQueue,
     deviceId,
+    qc,
   ]);
 
   const bar = useMemo(
@@ -416,7 +419,7 @@ export default function WriteSongScreen() {
   );
 
   const primaryButtonTitle =
-    verseIndex < total - 1
+    total > 0 && verseIndex < total - 1
       ? '다음 절로 →'
       : hasNextSongInQueue
         ? `다음 곡으로 → (${queueIndex + 1}/${queueIds.length} 완료)`
@@ -430,24 +433,86 @@ export default function WriteSongScreen() {
     );
   }
 
-  if (!current) {
+  if (!current && !hasSheets) {
     return (
       <View style={[styles.root, { backgroundColor: c.background, padding: 20 }]}>
-        <Text style={{ color: c.text }}>가사 데이터가 없습니다.</Text>
+        <Text style={{ color: c.text }}>가사·악보 데이터가 없습니다.</Text>
       </View>
     );
   }
 
+  const sourceToggle =
+    hasSheets || sourceTab === 'sheet' ? (
+      <View style={styles.sourceTabs}>
+        <Pressable
+          onPress={() => setSourceTab('lyrics')}
+          style={[
+            styles.sourceTab,
+            {
+              borderColor: sourceTab === 'lyrics' ? c.accent : c.border,
+              backgroundColor: sourceTab === 'lyrics' ? c.accentMuted : 'transparent',
+            },
+          ]}
+        >
+          <Text style={{ color: sourceTab === 'lyrics' ? c.accent : c.textSub, ...typeface.sansMedium, fontSize: fontSize.xs }}>
+            가사
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => setSourceTab('sheet')}
+          style={[
+            styles.sourceTab,
+            {
+              borderColor: sourceTab === 'sheet' ? c.accent : c.border,
+              backgroundColor: sourceTab === 'sheet' ? c.accentMuted : 'transparent',
+            },
+          ]}
+        >
+          <Text style={{ color: sourceTab === 'sheet' ? c.accent : c.textSub, ...typeface.sansMedium, fontSize: fontSize.xs }}>
+            악보
+          </Text>
+        </Pressable>
+        {hasSheets ? (
+          <Pressable onPress={() => setSheetViewerOpen(true)} hitSlop={8}>
+            <Feather name="maximize-2" size={16} color={c.textSub} />
+          </Pressable>
+        ) : null}
+      </View>
+    ) : null;
+
   const lyricsBlock = (
     <View style={[styles.lyricsBox, { borderColor: c.border }]}>
-      <LyricsPanel
-        verse={current}
-        backgroundStory={song.background_story}
-        bibleVerse={song.bible_verse}
-        compact={!isWide}
-      />
+      {sourceToggle}
+      {sourceTab === 'sheet' && hasSheets ? (
+        <SongSheetInline sheets={sheets} />
+      ) : current ? (
+        <LyricsPanel
+          verse={current}
+          backgroundStory={song.background_story}
+          bibleVerse={song.bible_verse}
+          compact={!isWide}
+        />
+      ) : (
+        <Text style={{ color: c.textSub, padding: 8 }}>가사가 없어 악보 탭을 이용해 주세요.</Text>
+      )}
     </View>
   );
+
+  /** iPad: 악보가 있으면 왼쪽 고정 악보 + 오른쪽 필사, 없으면 가사 */
+  const leftPane =
+    isWide && hasSheets ? (
+      <View style={[styles.lyricsBox, { borderColor: c.border }]}>
+        <View style={styles.wideSheetHead}>
+          <Text style={{ color: c.textSub, ...typeface.sansMedium, fontSize: fontSize.xs }}>악보</Text>
+          <Pressable onPress={() => setSheetViewerOpen(true)} hitSlop={8}>
+            <Feather name="maximize-2" size={16} color={c.textSub} />
+          </Pressable>
+        </View>
+        <SongSheetInline sheets={sheets} />
+      </View>
+    ) : (
+      lyricsBlock
+    );
 
   const workBlock = (
     <View style={styles.work}>
@@ -514,11 +579,17 @@ export default function WriteSongScreen() {
         onClose={closeShareToGallery}
         onPosted={onShareToGalleryPosted}
       />
+      <SongSheetViewer
+        visible={sheetViewerOpen}
+        sheets={sheets}
+        title={song?.title}
+        onClose={() => setSheetViewerOpen(false)}
+      />
       {bar}
 
       {isWide ? (
         <View style={styles.split}>
-          <View style={[styles.col, styles.lyricsCol]}>{lyricsBlock}</View>
+          <View style={[styles.col, styles.lyricsCol]}>{leftPane}</View>
           <View style={[styles.col, styles.workCol]}>{workBlock}</View>
         </View>
       ) : (
@@ -584,6 +655,24 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderRadius: 12,
     padding: 12,
+  },
+  sourceTabs: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 8,
+  },
+  sourceTab: {
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: StyleSheet.hairlineWidth,
+  },
+  wideSheetHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
   },
   work: { flex: 1 },
   workActions: {

@@ -24,6 +24,7 @@ import { useThemeColors } from '@/hooks/useThemeColors';
 import { useWorships } from '@/hooks/useWorships';
 import { galleryPostMatchesSince, gallerySinceDate, galleryTimeFilterKey, isWorshipGalleryFilter } from '@/lib/galleryFilter';
 import { isSupabaseConfigured, supabaseMissingConfigUserMessage } from '@/lib/supabase';
+import { useUserStore } from '@/stores/userStore';
 
 export default function GalleryScreen() {
   const { contentWidth, horizontalGutter, isWide, listBottomPadding, insets } = useLayoutMetrics();
@@ -34,16 +35,21 @@ export default function GalleryScreen() {
     const gaps = gridGap * (numColumns - 1);
     return Math.floor((contentWidth - gaps) / numColumns);
   }, [contentWidth, gridGap, numColumns]);
+  const gatheringId = useUserStore((s) => s.gatheringId);
   const { data: worships, refetch: refetchWorships } = useWorships();
   const { filter: filterParam } = useLocalSearchParams<{ filter?: string }>();
   const [filter, setFilter] = useState<GalleryFilter>('all');
 
   useEffect(() => {
+    if (!gatheringId) {
+      setFilter('mine');
+      return;
+    }
     if (filterParam === 'mine') setFilter('mine');
-  }, [filterParam]);
+  }, [filterParam, gatheringId]);
 
   const worshipId = isWorshipGalleryFilter(filter) ? filter : undefined;
-  const mine = filter === 'mine';
+  const mine = !gatheringId || filter === 'mine';
   const timeFilter = galleryTimeFilterKey(filter);
   const since = useMemo(() => gallerySinceDate(filter), [filter]);
 
@@ -74,18 +80,24 @@ export default function GalleryScreen() {
       <View style={[styles.listHeader, { paddingHorizontal: horizontalGutter }]}>
         <ScreenHeader
           title="나눔"
-          subtitle="필사·사진, 찬양과 묵상을 함께 나눠요"
+          subtitle={
+            gatheringId
+              ? '필사·사진, 찬양과 묵상을 함께 나눠요'
+              : '내 필사 보관함 · 모임에 들어가면 함께 나눌 수 있어요'
+          }
           showThemeToggle
         />
-        <FilterChips
-          worships={worships ?? []}
-          active={filter}
-          onChange={setFilter}
-          horizontalPadding={horizontalGutter}
-        />
+        {gatheringId ? (
+          <FilterChips
+            worships={worships ?? []}
+            active={filter}
+            onChange={setFilter}
+            horizontalPadding={horizontalGutter}
+          />
+        ) : null}
       </View>
     ),
-    [worships, filter, horizontalGutter]
+    [worships, filter, horizontalGutter, gatheringId]
   );
 
   return (

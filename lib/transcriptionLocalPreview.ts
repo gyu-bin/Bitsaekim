@@ -64,20 +64,20 @@ export async function getTranscriptionPreviewFileUri(
 /** 필사 완료 직후: DB에 기록된 transcriptions 행 id를 찾아서 캡처 JPEG를 기기에 저장 */
 export async function persistPreviewAfterTranscriptionComplete(
   deviceId: string | null,
-  worshipId: string,
+  worshipId: string | null | undefined,
   songId: string,
   captureUri: string
 ): Promise<void> {
   if (!deviceId || !captureUri) return;
-  const { data } = await supabase
+  let q = supabase
     .from('transcriptions')
     .select('id')
     .eq('device_id', deviceId)
-    .eq('worship_id', worshipId)
     .eq('song_id', songId)
     .order('completed_at', { ascending: false })
-    .limit(1)
-    .maybeSingle();
+    .limit(1);
+  q = worshipId ? q.eq('worship_id', worshipId) : q.is('worship_id', null);
+  const { data } = await q.maybeSingle();
   if (!data?.id) return;
   await saveTranscriptionPreview(data.id, captureUri);
 }

@@ -73,6 +73,10 @@ export interface GalleryPost {
   worship?: Pick<WorshipService, 'name'> | null;
   likes_count?: number;
   is_liked?: boolean;
+  /** emoji별 반응 수 */
+  reactions?: Partial<Record<'heart' | 'amen' | 'cheer', number>>;
+  /** 내가 누른 반응 */
+  my_reactions?: Array<'heart' | 'amen' | 'cheer'>;
 }
 
 export type TranscribeMode = 'typing' | 'handwriting';

@@ -64,30 +64,38 @@ async function fetchGalleryPage(
   const ids = rows.map((r) => r.id);
   const { data: likeRows } = await supabase
     .from('likes')
-    .select('post_id')
+    .select('post_id, device_id, emoji')
     .in('post_id', ids);
 
-  const countMap = new Map<string, number>();
+  type ReactionEmoji = 'heart' | 'amen' | 'cheer';
+  const countByPost = new Map<string, Partial<Record<ReactionEmoji, number>>>();
+  const mineByPost = new Map<string, ReactionEmoji[]>();
+
   for (const l of likeRows ?? []) {
     const id = l.post_id as string;
-    countMap.set(id, (countMap.get(id) ?? 0) + 1);
+    const emoji = ((l as { emoji?: string }).emoji ?? 'heart') as ReactionEmoji;
+    const map = countByPost.get(id) ?? {};
+    map[emoji] = (map[emoji] ?? 0) + 1;
+    countByPost.set(id, map);
+    if (deviceId && l.device_id === deviceId) {
+      const mine = mineByPost.get(id) ?? [];
+      if (!mine.includes(emoji)) mine.push(emoji);
+      mineByPost.set(id, mine);
+    }
   }
 
-  let likedSet = new Set<string>();
-  if (deviceId) {
-    const { data: mineLikes } = await supabase
-      .from('likes')
-      .select('post_id')
-      .in('post_id', ids)
-      .eq('device_id', deviceId);
-    likedSet = new Set((mineLikes ?? []).map((x) => x.post_id as string));
-  }
-
-  return rows.map((r) => ({
-    ...r,
-    likes_count: countMap.get(r.id) ?? 0,
-    is_liked: likedSet.has(r.id),
-  }));
+  return rows.map((r) => {
+    const reactions = countByPost.get(r.id) ?? {};
+    const likes_count = Object.values(reactions).reduce((a, b) => a + (b ?? 0), 0);
+    const my_reactions = mineByPost.get(r.id) ?? [];
+    return {
+      ...r,
+      reactions,
+      likes_count,
+      is_liked: my_reactions.includes('heart'),
+      my_reactions,
+    };
+  });
 }
 
 export function useGallery(
